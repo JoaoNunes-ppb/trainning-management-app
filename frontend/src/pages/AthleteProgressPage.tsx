@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
+import { pt } from "date-fns/locale/pt";
 import {
   ArrowLeft,
   Calendar,
@@ -45,9 +46,9 @@ const statusConfig: Record<
   WorkoutStatus,
   { label: string; variant: "default" | "destructive" | "outline" }
 > = {
-  COMPLETED: { label: "Completed", variant: "default" },
-  MISSED: { label: "Missed", variant: "destructive" },
-  PENDING: { label: "Pending", variant: "outline" },
+  COMPLETED: { label: "Concluído", variant: "default" },
+  MISSED: { label: "Falhado", variant: "destructive" },
+  PENDING: { label: "Pendente", variant: "outline" },
 };
 
 interface MetricDef {
@@ -57,11 +58,11 @@ interface MetricDef {
 }
 
 const METRICS: MetricDef[] = [
-  { key: "weight", label: "Weight (kg)", color: "#8b5cf6" },
-  { key: "sets", label: "Sets", color: "#3b82f6" },
-  { key: "reps", label: "Reps", color: "#10b981" },
-  { key: "distance", label: "Distance (m)", color: "#f59e0b" },
-  { key: "time", label: "Time (s)", color: "#ef4444" },
+  { key: "weight", label: "Peso (kg)", color: "#8b5cf6" },
+  { key: "sets", label: "Séries", color: "#3b82f6" },
+  { key: "reps", label: "Repetições", color: "#10b981" },
+  { key: "distance", label: "Distância (m)", color: "#f59e0b" },
+  { key: "time", label: "Tempo (s)", color: "#ef4444" },
 ];
 
 interface DataPoint {
@@ -88,7 +89,7 @@ function getExerciseTimeSeries(
       const ex = w.exercises.find((e) => e.exerciseId === exerciseId)!;
       return {
         date: w.date,
-        dateLabel: format(parseISO(w.date), "MMM d"),
+        dateLabel: format(parseISO(w.date), "d MMM", { locale: pt }),
         workoutId: w.id,
         weight: ex.weightActual,
         sets: ex.setsActual,
@@ -127,7 +128,7 @@ function ExerciseChart({
         </CardHeader>
         <CardContent>
           <p className="text-xs text-muted-foreground">
-            No recorded results for this exercise yet.
+            Ainda não existem resultados registados para este exercício.
           </p>
         </CardContent>
       </Card>
@@ -232,13 +233,13 @@ export default function AthleteProgressPage() {
   if (isError || !data) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-24 text-center">
-        <h2 className="text-xl font-semibold">Failed to load progress</h2>
+        <h2 className="text-xl font-semibold">Erro ao carregar progresso</h2>
         <p className="text-sm text-muted-foreground">
-          Could not fetch athlete progress data.
+          Não foi possível obter os dados de progresso do atleta.
         </p>
         <Button variant="outline" onClick={() => navigate("/athletes")}>
           <ArrowLeft className="h-4 w-4" data-icon="inline-start" />
-          Back to Athletes
+          Voltar aos Atletas
         </Button>
       </div>
     );
@@ -266,11 +267,11 @@ export default function AthleteProgressPage() {
           <p className="text-sm text-muted-foreground">
             {athlete.dateOfBirth && (
               <span>
-                Born {format(parseISO(athlete.dateOfBirth), "MMM d, yyyy")}
+                Nascido a {format(parseISO(athlete.dateOfBirth), "d 'de' MMMM 'de' yyyy", { locale: pt })}
               </span>
             )}
             {athlete.dateOfBirth && athlete.coachName && <span> · </span>}
-            {athlete.coachName && <span>Coach: {athlete.coachName}</span>}
+            {athlete.coachName && <span>Treinador: {athlete.coachName}</span>}
           </p>
         </div>
       </div>
@@ -282,7 +283,7 @@ export default function AthleteProgressPage() {
             <div className="flex items-center gap-2 text-muted-foreground">
               <Calendar className="h-4 w-4" />
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Workouts
+                Total de Treinos
               </CardTitle>
             </div>
           </CardHeader>
@@ -296,7 +297,7 @@ export default function AthleteProgressPage() {
             <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
               <CheckCircle2 className="h-4 w-4" />
               <CardTitle className="text-sm font-medium text-green-600 dark:text-green-400">
-                Completed
+                Concluídos
               </CardTitle>
             </div>
           </CardHeader>
@@ -312,7 +313,7 @@ export default function AthleteProgressPage() {
             <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
               <XCircle className="h-4 w-4" />
               <CardTitle className="text-sm font-medium text-red-600 dark:text-red-400">
-                Missed
+                Falhados
               </CardTitle>
             </div>
           </CardHeader>
@@ -328,14 +329,14 @@ export default function AthleteProgressPage() {
             <div className="flex items-center gap-2 text-muted-foreground">
               <TrendingUp className="h-4 w-4" />
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Completion Rate
+                Taxa de Conclusão
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
               {stats.totalWorkouts === 0
-                ? "N/A"
+                ? "N/D"
                 : `${stats.completionRate.toFixed(1)}%`}
             </p>
           </CardContent>
@@ -344,26 +345,26 @@ export default function AthleteProgressPage() {
 
       {/* Workout History */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Workout History</h2>
+        <h2 className="text-lg font-semibold">Histórico de Treinos</h2>
 
         {workouts.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-24 text-center">
             <Clock className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm font-medium">No workouts yet</p>
+            <p className="text-sm font-medium">Sem treinos ainda</p>
             <p className="text-sm text-muted-foreground">
-              Workouts for this athlete will appear here once scheduled.
+              Os treinos deste atleta aparecerão aqui assim que forem agendados.
             </p>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead>Label</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Exercises</TableHead>
-                <TableHead className="w-20 text-right">Progress</TableHead>
+                <TableHead>Data</TableHead>
+                <TableHead>Hora</TableHead>
+                <TableHead>Designação</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Exercícios</TableHead>
+                <TableHead className="w-20 text-right">Progresso</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -377,7 +378,7 @@ export default function AthleteProgressPage() {
                       className={isExpanded ? "border-b-0" : undefined}
                     >
                       <TableCell>
-                        {format(parseISO(w.date), "MMM d, yyyy")}
+                        {format(parseISO(w.date), "d MMM yyyy", { locale: pt })}
                       </TableCell>
                       <TableCell>
                         {w.scheduledTime
@@ -390,7 +391,7 @@ export default function AthleteProgressPage() {
                       </TableCell>
                       <TableCell>
                         {w.exercises.length}{" "}
-                        {w.exercises.length === 1 ? "exercise" : "exercises"}
+                        {w.exercises.length === 1 ? "exercício" : "exercícios"}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
@@ -413,7 +414,7 @@ export default function AthleteProgressPage() {
                           <div className="space-y-4">
                             {w.exercises.length === 0 ? (
                               <p className="text-sm text-muted-foreground">
-                                No exercises in this workout.
+                                Sem exercícios neste treino.
                               </p>
                             ) : (
                               w.exercises.map((ex) => (

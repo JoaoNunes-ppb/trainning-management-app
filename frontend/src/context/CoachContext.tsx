@@ -3,7 +3,7 @@ import type { Coach } from "@/types";
 
 interface CoachContextValue {
   activeCoach: Coach | null;
-  setActiveCoach: (coach: Coach) => void;
+  setActiveCoach: (coach: Coach | null) => void;
 }
 
 const CoachContext = createContext<CoachContextValue | undefined>(undefined);
@@ -22,8 +22,12 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     readStoredCoach,
   );
 
-  const setActiveCoach = (coach: Coach) => {
-    localStorage.setItem("activeCoach", JSON.stringify(coach));
+  const setActiveCoach = (coach: Coach | null) => {
+    if (coach) {
+      localStorage.setItem("activeCoach", JSON.stringify(coach));
+    } else {
+      localStorage.removeItem("activeCoach");
+    }
     setActiveCoachState(coach);
   };
 

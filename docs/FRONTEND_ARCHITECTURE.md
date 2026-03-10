@@ -90,6 +90,7 @@ frontend/
 <Routes>
   <Route element={<AppLayout />}>
     <Route path="/" element={<CalendarPage />} />
+    <Route path="/coaches" element={<CoachesPage />} />
     <Route path="/athletes" element={<AthletesPage />} />
     <Route path="/exercises" element={<ExercisesPage />} />
     <Route path="/workouts/:id" element={<WorkoutDetailPage />} />
@@ -98,6 +99,8 @@ frontend/
 ```
 
 All routes render inside `AppLayout`, which provides the top bar (with coach selector) and sidebar navigation.
+
+The sidebar has 4 links: Calendário (/), Treinadores (/coaches), Atletas (/athletes), Exercícios (/exercises).
 
 ## 4. TypeScript Types
 
@@ -179,7 +182,7 @@ export interface ExerciseResult {
   notes: string | null;
 }
 
-export type CalendarViewMode = "all" | "byCoach" | "byAthlete";
+export type CalendarViewMode = "myAthletes" | "all" | "byAthlete";
 ```
 
 ## 5. State Management
@@ -213,33 +216,73 @@ interface CoachContextValue {
 
 The active coach is persisted to `localStorage` so it survives page refreshes. On first load, if no coach is saved, the app prompts the user to select one.
 
-## 6. Key Component Behaviors
+## 6. Ownership Helper
 
-### 6.1 WeeklyCalendar
+A utility function determines whether the active coach "owns" a resource:
+
+```typescript
+// lib/ownership.ts
+export function isOwnedByActiveCoach(coachId: string, activeCoachId: string | undefined): boolean {
+  return !!activeCoachId && coachId === activeCoachId;
+}
+```
+
+This is used throughout the app to decide whether to show edit/delete buttons, allow calendar interactions, etc.
+
+## 7. Key Component Behaviors
+
+### 7.1 CoachesPage
+
+- Full CRUD page for managing coaches.
+- Table with columns: Name, Actions (edit, delete).
+- "Adicionar Treinador" button opens a dialog with name input.
+- Deleting a coach shows a confirmation warning that all their athletes and workouts will be deleted.
+- Accessible from the sidebar (icon: Shield or UserCog).
+
+### 7.2 WeeklyCalendar
 
 - Receives the current week's start date (always a Monday) as state.
 - Fetches workouts for the 7-day range via `GET /api/workouts?startDate=...&endDate=...&coachId=...&athleteId=...`.
 - Groups workouts by date on the client side.
 - Renders 7 `DayColumn` components, each showing a list of `WorkoutCard` items.
-- The filter bar allows switching between "All", "By Coach", and "By Athlete" modes.
+- The filter bar allows switching between "Os Meus Atletas", "Todos os Atletas", and "Por Atleta".
+- **Default view is "Os Meus Atletas"** (fetches with coachId = activeCoach.id).
 
-### 6.2 CalendarFilterBar
+### 7.3 CalendarFilterBar
 
-- Three tabs/buttons: "All Athletes", "By Coach", "By Athlete".
-- "By Coach" reveals a coach dropdown (defaults to active coach from context).
-- "By Athlete" reveals an athlete dropdown (optionally pre-filtered by active coach).
+- Three tabs/buttons: "Os Meus Atletas" (default), "Todos os Atletas", "Por Atleta".
+- "Os Meus Atletas" has no additional dropdown (uses active coach automatically).
+- "Todos os Atletas" has no additional dropdown (fetches everything).
+- "Por Atleta" reveals an athlete dropdown showing ALL athletes (from all coaches).
 - Changing the filter triggers a new query for workouts.
 
-### 6.3 WorkoutCard
+### 7.4 WorkoutCard
 
 - Displays: workout label, athlete name, exercise count badge.
 - Shows a small indicator if results have been logged (e.g., checkmark icon).
-- Clicking navigates to `/workouts/:id`.
+- **Ownership visual cue**: If the workout's coachId does NOT match the active coach, the card is rendered with reduced opacity (e.g., `opacity-60`) and a subtle dashed border.
+- Clicking always navigates to `/workouts/:id`.
 
-### 6.4 WorkoutDetailPage
+### 7.5 DayColumn
+
+- Clicking empty space to create a workout is ONLY enabled when:
+  - View mode is "myAthletes", OR
+  - View mode is "byAthlete" AND the selected athlete belongs to the active coach.
+- In "all" mode, the "+" click area is hidden.
+
+### 7.6 WorkoutDetailPage
 
 - Fetches full workout detail via `GET /api/workouts/:id`.
-- Shows workout header (label, date, athlete, notes) with edit capability.
+- Computes `isOwner = isOwnedByActiveCoach(workout.coachId, activeCoach.id)`.
+- **If isOwner is true**: full edit mode -- shows all edit/delete buttons, add exercise, log results.
+- **If isOwner is false**: read-only mode:
+  - A banner at the top: "Treino de atleta de outro treinador (apenas leitura)"
+  - WorkoutHeader hides Edit and Delete buttons.
+  - WorkoutExerciseList hides "Adicionar Exercício" button.
+  - WorkoutExerciseItem hides edit and delete buttons.
+  - ResultLogger is not shown (no log/edit/clear).
+  - All data is still visible (exercise names, expected values, actual results).
+- Shows workout header (label, date, athlete, notes) with edit capability (if owner).
 - Lists exercises in order, each showing:
   - Exercise name
   - Expected values (only the enabled parameter fields)
@@ -247,13 +290,19 @@ The active coach is persisted to `localStorage` so it survives page refreshes. O
 - "Add Exercise" button opens a dialog to pick from the exercise library and set expected values.
 - Drag-to-reorder exercises (calls PUT /api/workouts/{id}/exercises/reorder).
 
-### 6.5 ExerciseForm
+### 7.7 WorkoutForm (Create)
+
+- The athlete dropdown ONLY shows athletes belonging to the active coach.
+- The coachId is not selectable -- it is always the active coach.
+- This ensures coaches can only create workouts for their own athletes.
+
+### 7.8 ExerciseForm
 
 - Name and description fields.
 - `ParameterToggles` component: 5 checkboxes for sets, reps, weight, distance, time.
 - At least one parameter must be toggled on (validation).
 
-### 6.6 ResultLogger
+### 7.9 ResultLogger
 
 - An inline expandable form per exercise in the workout detail page.
 - Only shows input fields for the parameters enabled on the exercise template.
@@ -261,7 +310,7 @@ The active coach is persisted to `localStorage` so it survives page refreshes. O
 - "Clear" calls `DELETE /api/workout-exercises/{id}/result`.
 - Visual indicator (green checkmark or highlight) when results are logged.
 
-## 7. API Layer
+## 8. API Layer
 
 Each API module exports functions that return typed promises:
 
@@ -301,7 +350,7 @@ export const client = axios.create({
 });
 ```
 
-## 8. UI Language -- Portuguese (pt-PT)
+## 9. UI Language -- Portuguese (pt-PT)
 
 All user-facing text in the frontend MUST be written in **Portuguese (Portugal)**. The API endpoints, JSON field names, TypeScript types, variable names, and code remain in English. Only the visible UI text (labels, headings, buttons, placeholders, messages, tooltips) is in Portuguese.
 
@@ -311,11 +360,21 @@ All user-facing text in the frontend MUST be written in **Portuguese (Portugal)*
 |---------|-----------|
 | Athlete Manager | Gestão de Atletas |
 | Calendar | Calendário |
+| Coaches | Treinadores |
 | Athletes | Atletas |
 | Exercises | Exercícios |
 | Workouts | Treinos |
 | Coach | Treinador |
 | Select a coach | Selecionar treinador |
+| Manage Coaches | Gerir Treinadores |
+| Add Coach | Adicionar Treinador |
+| Edit Coach | Editar Treinador |
+| Delete Coach | Eliminar Treinador |
+| My Athletes | Os Meus Atletas |
+| All Athletes | Todos os Atletas |
+| By Athlete | Por Atleta |
+| Read-only (other coach's athlete) | Treino de atleta de outro treinador (apenas leitura) |
+| Other coach's training | Treino de outro treinador |
 | Name | Nome |
 | Date of Birth | Data de Nascimento |
 | Notes | Notas |
@@ -391,7 +450,7 @@ import { pt } from "date-fns/locale";
 format(date, "d 'de' MMMM", { locale: pt });
 ```
 
-## 9. UI/UX Guidelines
+## 10. UI/UX Guidelines
 
 - **Clean, minimal design** using Tailwind's neutral color palette.
 - **shadcn/ui components** for buttons, inputs, selects, dialogs, cards, tables, toasts.
@@ -402,7 +461,7 @@ format(date, "d 'de' MMMM", { locale: pt });
 - **Confirmation dialogs** for destructive actions (delete).
 - **All UI text in Portuguese (pt-PT)** -- see section 8 for the translation reference.
 
-## 9. Implementation Order
+## 11. Implementation Order
 
 Build the frontend in this order:
 

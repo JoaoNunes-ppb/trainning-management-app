@@ -3,6 +3,7 @@ import { format, isToday } from "date-fns";
 import { pt } from "date-fns/locale";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isOwner } from "@/lib/ownership";
 import WorkoutCard from "./WorkoutCard";
 import type { WorkoutSummary } from "@/types";
 
@@ -10,12 +11,16 @@ interface DayColumnProps {
   date: Date;
   workouts: WorkoutSummary[];
   onDayClick: (date: Date) => void;
+  canCreate: boolean;
+  activeCoachId?: string;
 }
 
 export default function DayColumn({
   date,
   workouts,
   onDayClick,
+  canCreate,
+  activeCoachId,
 }: DayColumnProps) {
   const today = isToday(date);
 
@@ -59,16 +64,23 @@ export default function DayColumn({
       </div>
 
       <div
-        className="flex flex-1 cursor-pointer flex-col gap-1.5 p-1.5"
+        className={cn(
+          "flex flex-1 flex-col gap-1.5 p-1.5",
+          canCreate && "cursor-pointer",
+        )}
         onClick={(e) => {
-          if (e.target === e.currentTarget) onDayClick(date);
+          if (canCreate && e.target === e.currentTarget) onDayClick(date);
         }}
       >
         {sorted.map((w) => (
-          <WorkoutCard key={w.id} workout={w} />
+          <WorkoutCard
+            key={w.id}
+            workout={w}
+            isOwner={isOwner(w.coachId, activeCoachId)}
+          />
         ))}
 
-        {sorted.length === 0 && (
+        {canCreate && sorted.length === 0 && (
           <button
             onClick={() => onDayClick(date)}
             className="flex flex-1 items-center justify-center text-muted-foreground/40 transition-colors hover:text-muted-foreground/70"

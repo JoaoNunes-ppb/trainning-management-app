@@ -20,6 +20,7 @@ import { ResultLogger } from "@/components/result/ResultLogger";
 interface WorkoutExerciseItemProps {
   workoutExercise: WorkoutExerciseDetail;
   workoutId: string;
+  readOnly?: boolean;
 }
 
 function formatValues(
@@ -32,13 +33,13 @@ function formatValues(
 
   if (mode === "expected") {
     if (ex.hasSets && we.setsExpected != null) parts.push(`${we.setsExpected} séries`);
-    if (ex.hasReps && we.repsExpected != null) parts.push(`${we.repsExpected} reps`);
+    if (ex.hasReps && we.repsExpected != null) parts.push(`${we.repsExpected} repetições`);
     if (ex.hasWeight && we.weightExpected != null) parts.push(`${we.weightExpected} kg`);
     if (ex.hasDistance && we.distanceExpected != null) parts.push(`${we.distanceExpected} m`);
     if (ex.hasTime && we.timeExpected != null) parts.push(`${we.timeExpected} s`);
   } else if (r) {
     if (ex.hasSets && r.sets != null) parts.push(`${r.sets} séries`);
-    if (ex.hasReps && r.reps != null) parts.push(`${r.reps} reps`);
+    if (ex.hasReps && r.reps != null) parts.push(`${r.reps} repetições`);
     if (ex.hasWeight && r.weight != null) parts.push(`${r.weight} kg`);
     if (ex.hasDistance && r.distance != null) parts.push(`${r.distance} m`);
     if (ex.hasTime && r.time != null) parts.push(`${r.time} s`);
@@ -50,7 +51,7 @@ function formatValues(
   return `${first} \u00d7 ${rest.slice(0, 1).join("")}${rest.length > 1 ? " @ " + rest.slice(1).join(", ") : ""}`;
 }
 
-export function WorkoutExerciseItem({ workoutExercise, workoutId }: WorkoutExerciseItemProps) {
+export function WorkoutExerciseItem({ workoutExercise, workoutId, readOnly = false }: WorkoutExerciseItemProps) {
   const updateMutation = useUpdateExercise(workoutId);
   const deleteMutation = useDeleteExercise(workoutId);
 
@@ -128,16 +129,20 @@ export function WorkoutExerciseItem({ workoutExercise, workoutId }: WorkoutExerc
                 <p className="text-xs text-muted-foreground italic mt-1">{workoutExercise.notes}</p>
               )}
 
-              <ResultLogger workoutExercise={workoutExercise} workoutId={workoutId} />
+              {!readOnly && (
+                <ResultLogger workoutExercise={workoutExercise} workoutId={workoutId} />
+              )}
             </div>
-            <div className="flex gap-1 shrink-0">
-              <Button variant="ghost" size="icon-xs" onClick={openEdit}>
-                <Pencil className="size-3.5" />
-              </Button>
-              <Button variant="ghost" size="icon-xs" onClick={() => setDeleteOpen(true)}>
-                <Trash2 className="size-3.5" />
-              </Button>
-            </div>
+            {!readOnly && (
+              <div className="flex gap-1 shrink-0">
+                <Button variant="ghost" size="icon-xs" onClick={openEdit}>
+                  <Pencil className="size-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon-xs" onClick={() => setDeleteOpen(true)}>
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

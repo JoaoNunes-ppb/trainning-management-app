@@ -2,8 +2,11 @@ import { useMemo, useState, useCallback } from "react";
 import { addDays, subDays, isToday, format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { useCoachContext } from "@/context/CoachContext";
 import { useCalendarWorkouts } from "@/hooks/useCalendar";
+import { useAthletes } from "@/hooks/useAthletes";
 import { formatDateParam } from "@/lib/dateUtils";
+import { isOwner as checkOwner } from "@/lib/ownership";
 import { Button } from "@/components/ui/button";
 import { WorkoutForm } from "@/components/workout/WorkoutForm";
 import CalendarFilterBar from "./CalendarFilterBar";
@@ -16,13 +19,11 @@ interface DailyCalendarProps {
   onDateChange: (date: Date) => void;
   viewMode: CalendarViewMode;
   onViewModeChange: (mode: CalendarViewMode) => void;
-  selectedCoachId: string | undefined;
-  onCoachChange: (id: string) => void;
   selectedAthleteId: string | undefined;
   onAthleteChange: (id: string) => void;
 }
 
-const HOURS = Array.from({ length: 17 }, (_, i) => i + 6); // 06:00 – 22:00
+const HOURS = Array.from({ length: 17 }, (_, i) => i + 6);
 
 function hourLabel(h: number) {
   return `${String(h).padStart(2, "0")}:00`;
@@ -33,17 +34,16 @@ export default function DailyCalendar({
   onDateChange,
   viewMode,
   onViewModeChange,
-  selectedCoachId,
-  onCoachChange,
   selectedAthleteId,
   onAthleteChange,
 }: DailyCalendarProps) {
+  const { activeCoach } = useCoachContext();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [createDate, setCreateDate] = useState<string | null>(null);
 
   const dateStr = formatDateParam(date);
 
-  const filterCoachId = viewMode === "byCoach" ? selectedCoachId : undefined;
+  const filterCoachId = viewMode === "myAthletes" ? activeCoach?.id : undefined;
   const filterAthleteId =
     viewMode === "byAthlete" ? selectedAthleteId : undefined;
 
@@ -53,6 +53,20 @@ export default function DailyCalendar({
     filterCoachId,
     filterAthleteId,
   );
+
+  const { data: allAthletes } = useAthletes();
+
+  const selectedAthleteBelongsToCoach = useMemo(() => {
+    if (!selectedAthleteId || !activeCoach) return false;
+    const athlete = allAthletes?.find((a) => a.id === selectedAthleteId);
+    return athlete ? checkOwner(athlete.coachId, activeCoach.id) : false;
+  }, [selectedAthleteId, activeCoach, allAthletes]);
+
+  const canCreate = useMemo(() => {
+    if (viewMode === "myAthletes") return true;
+    if (viewMode === "byAthlete" && selectedAthleteBelongsToCoach) return true;
+    return false;
+  }, [viewMode, selectedAthleteBelongsToCoach]);
 
   const { unscheduled, byHour } = useMemo(() => {
     const unsched: WorkoutSummary[] = [];
@@ -87,9 +101,10 @@ export default function DailyCalendar({
   );
 
   const handleSlotClick = useCallback(() => {
+    if (!canCreate) return;
     setCreateDate(dateStr);
     setShowCreateDialog(true);
-  }, [dateStr]);
+  }, [dateStr, canCreate]);
 
   const today = isToday(date);
 
@@ -118,23 +133,23 @@ export default function DailyCalendar({
           </h2>
           <div className="w-[140px]" />
         </div>
-        <Button
-          size="sm"
-          onClick={() => {
-            setCreateDate(dateStr);
-            setShowCreateDialog(true);
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          Novo Treino
-        </Button>
+        {canCreate && (
+          <Button
+            size="sm"
+            onClick={() => {
+              setCreateDate(dateStr);
+              setShowCreateDialog(true);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            Novo Treino
+          </Button>
+        )}
       </div>
 
       <CalendarFilterBar
         viewMode={viewMode}
         onViewModeChange={onViewModeChange}
-        selectedCoachId={selectedCoachId}
-        onCoachChange={onCoachChange}
         selectedAthleteId={selectedAthleteId}
         onAthleteChange={onAthleteChange}
       />
@@ -143,7 +158,6 @@ export default function DailyCalendar({
         <DailyCalendarSkeleton />
       ) : (
         <div className="flex flex-col gap-4">
-          {/* Unscheduled section */}
           <div className="rounded-lg border border-border">
             <div className="border-b border-border bg-muted/50 px-4 py-2">
               <h3 className="text-sm font-medium text-muted-foreground">
@@ -154,7 +168,11 @@ export default function DailyCalendar({
               {unscheduled.length > 0 ? (
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                   {unscheduled.map((w) => (
-                    <WorkoutCard key={w.id} workout={w} />
+                    <WorkoutCard
+                      key={w.id}
+                      workout={w}
+                      isOwner={checkOwner(w.coachId, activeCoach?.id)}
+                    />
                   ))}
                 </div>
               ) : (
@@ -165,7 +183,6 @@ export default function DailyCalendar({
             </div>
           </div>
 
-          {/* Time grid */}
           <div className="rounded-lg border border-border">
             <div className="border-b border-border bg-muted/50 px-4 py-2">
               <h3 className="text-sm font-medium text-muted-foreground">
@@ -178,9 +195,9 @@ export default function DailyCalendar({
                 return (
                   <div
                     key={hour}
-                    className="group flex min-h-[60px] cursor-pointer transition-colors hover:bg-accent/30"
+                    className={`group flex min-h-[60px] transition-colors hover:bg-accent/30 ${canCreate ? "cursor-pointer" : ""}`}
                     onClick={(e) => {
-                      if (e.target === e.currentTarget || hourWorkouts.length === 0)
+                      if (canCreate && (e.target === e.currentTarget || hourWorkouts.length === 0))
                         handleSlotClick();
                     }}
                   >
@@ -192,10 +209,13 @@ export default function DailyCalendar({
                     <div className="flex flex-1 flex-wrap gap-2 p-2">
                       {hourWorkouts.map((w) => (
                         <div key={w.id} className="w-full max-w-xs">
-                          <WorkoutCard workout={w} />
+                          <WorkoutCard
+                            workout={w}
+                            isOwner={checkOwner(w.coachId, activeCoach?.id)}
+                          />
                         </div>
                       ))}
-                      {hourWorkouts.length === 0 && (
+                      {canCreate && hourWorkouts.length === 0 && (
                         <div className="flex flex-1 items-center justify-center text-muted-foreground/30 opacity-0 transition-opacity group-hover:opacity-100">
                           <Plus className="h-4 w-4" />
                         </div>

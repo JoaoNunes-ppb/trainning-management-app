@@ -3,7 +3,9 @@ import { addWeeks, subWeeks, eachDayOfInterval, isSameDay, format } from "date-f
 import { Plus } from "lucide-react";
 import { useCoachContext } from "@/context/CoachContext";
 import { useCalendarWorkouts } from "@/hooks/useCalendar";
+import { useAthletes } from "@/hooks/useAthletes";
 import { getWeekStart, getWeekEnd, formatDateParam } from "@/lib/dateUtils";
+import { isOwner } from "@/lib/ownership";
 import { Button } from "@/components/ui/button";
 import { WorkoutForm } from "@/components/workout/WorkoutForm";
 import CalendarHeader from "./CalendarHeader";
@@ -15,8 +17,6 @@ import type { CalendarViewMode } from "@/types";
 interface WeeklyCalendarProps {
   viewMode?: CalendarViewMode;
   onViewModeChange?: (mode: CalendarViewMode) => void;
-  selectedCoachId?: string | undefined;
-  onCoachChange?: (id: string) => void;
   selectedAthleteId?: string | undefined;
   onAthleteChange?: (id: string) => void;
 }
@@ -24,8 +24,6 @@ interface WeeklyCalendarProps {
 export default function WeeklyCalendar({
   viewMode: externalViewMode,
   onViewModeChange: externalOnViewModeChange,
-  selectedCoachId: externalCoachId,
-  onCoachChange: externalOnCoachChange,
   selectedAthleteId: externalAthleteId,
   onAthleteChange: externalOnAthleteChange,
 }: WeeklyCalendarProps = {}) {
@@ -34,18 +32,13 @@ export default function WeeklyCalendar({
   const [currentWeekStart, setCurrentWeekStart] = useState(() =>
     getWeekStart(new Date()),
   );
-  const [internalViewMode, setInternalViewMode] = useState<CalendarViewMode>("byCoach");
-  const [internalCoachId, setInternalCoachId] = useState<string | undefined>(
-    activeCoach?.id,
-  );
+  const [internalViewMode, setInternalViewMode] = useState<CalendarViewMode>("myAthletes");
   const [internalAthleteId, setInternalAthleteId] = useState<
     string | undefined
   >();
 
   const viewMode = externalViewMode ?? internalViewMode;
   const setViewMode = externalOnViewModeChange ?? setInternalViewMode;
-  const selectedCoachId = externalCoachId ?? internalCoachId;
-  const setSelectedCoachId = externalOnCoachChange ?? setInternalCoachId;
   const selectedAthleteId = externalAthleteId ?? internalAthleteId;
   const setSelectedAthleteId = externalOnAthleteChange ?? setInternalAthleteId;
 
@@ -54,7 +47,7 @@ export default function WeeklyCalendar({
 
   const weekEnd = getWeekEnd(currentWeekStart);
 
-  const filterCoachId = viewMode === "byCoach" ? selectedCoachId : undefined;
+  const filterCoachId = viewMode === "myAthletes" ? activeCoach?.id : undefined;
   const filterAthleteId =
     viewMode === "byAthlete" ? selectedAthleteId : undefined;
 
@@ -64,6 +57,20 @@ export default function WeeklyCalendar({
     filterCoachId,
     filterAthleteId,
   );
+
+  const { data: allAthletes } = useAthletes();
+
+  const selectedAthleteBelongsToCoach = useMemo(() => {
+    if (!selectedAthleteId || !activeCoach) return false;
+    const athlete = allAthletes?.find((a) => a.id === selectedAthleteId);
+    return athlete ? isOwner(athlete.coachId, activeCoach.id) : false;
+  }, [selectedAthleteId, activeCoach, allAthletes]);
+
+  const canCreate = useMemo(() => {
+    if (viewMode === "myAthletes") return true;
+    if (viewMode === "byAthlete" && selectedAthleteBelongsToCoach) return true;
+    return false;
+  }, [viewMode, selectedAthleteBelongsToCoach]);
 
   const days = useMemo(
     () => eachDayOfInterval({ start: currentWeekStart, end: weekEnd }),
@@ -98,11 +105,8 @@ export default function WeeklyCalendar({
   const handleViewModeChange = useCallback(
     (mode: CalendarViewMode) => {
       setViewMode(mode);
-      if (mode === "byCoach" && !selectedCoachId && activeCoach) {
-        setSelectedCoachId(activeCoach.id);
-      }
     },
-    [selectedCoachId, activeCoach],
+    [setViewMode],
   );
 
   const handleDayClick = useCallback((date: Date) => {
@@ -121,23 +125,23 @@ export default function WeeklyCalendar({
             onToday={handleToday}
           />
         </div>
-        <Button
-          size="sm"
-          onClick={() => {
-            setCreateDate(null);
-            setShowCreateDialog(true);
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          Novo Treino
-        </Button>
+        {canCreate && (
+          <Button
+            size="sm"
+            onClick={() => {
+              setCreateDate(null);
+              setShowCreateDialog(true);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            Novo Treino
+          </Button>
+        )}
       </div>
 
       <CalendarFilterBar
         viewMode={viewMode}
         onViewModeChange={handleViewModeChange}
-        selectedCoachId={selectedCoachId}
-        onCoachChange={setSelectedCoachId}
         selectedAthleteId={selectedAthleteId}
         onAthleteChange={setSelectedAthleteId}
       />
@@ -152,6 +156,8 @@ export default function WeeklyCalendar({
               date={day}
               workouts={workoutsByDay.get(day.toISOString()) ?? []}
               onDayClick={handleDayClick}
+              canCreate={canCreate}
+              activeCoachId={activeCoach?.id}
             />
           ))}
         </div>

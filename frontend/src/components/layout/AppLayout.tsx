@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from "react";
-import { NavLink, Outlet } from "react-router-dom";
-import { Calendar, Users, Dumbbell, Menu, X } from "lucide-react";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Calendar, Users, Dumbbell, Shield, Menu, X, Settings } from "lucide-react";
 import { useCoaches } from "@/hooks/useCoaches";
 import { useCoachContext } from "@/context/CoachContext";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
 
 const navItems = [
   { to: "/", label: "Calendário", icon: Calendar },
+  { to: "/coaches", label: "Treinadores", icon: Shield },
   { to: "/athletes", label: "Atletas", icon: Users },
   { to: "/exercises", label: "Exercícios", icon: Dumbbell },
 ];
@@ -53,6 +54,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
 export default function AppLayout() {
   const { data: coaches, isLoading: coachesLoading } = useCoaches();
   const { activeCoach, setActiveCoach } = useCoachContext();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const closeMobile = useCallback(() => setMobileOpen(false), []);
@@ -137,6 +139,19 @@ export default function AppLayout() {
                   {coach.name}
                 </SelectItem>
               ))}
+              <div className="border-t border-border mt-1 pt-1">
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    navigate("/coaches");
+                  }}
+                >
+                  <Settings className="h-3.5 w-3.5" />
+                  Gerir Treinadores
+                </button>
+              </div>
             </SelectContent>
           </Select>
         </header>

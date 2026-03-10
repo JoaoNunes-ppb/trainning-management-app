@@ -1,6 +1,8 @@
 import { useParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useWorkout } from "@/hooks/useWorkouts";
+import { useCoachContext } from "@/context/CoachContext";
+import { isOwner } from "@/lib/ownership";
 import { WorkoutHeader } from "@/components/workout/WorkoutHeader";
 import { WorkoutExerciseList } from "@/components/workout/WorkoutExerciseList";
 import { Separator } from "@/components/ui/separator";
@@ -15,6 +17,7 @@ const statusBorderColor: Record<string, string> = {
 export default function WorkoutDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: workout, isLoading, isError } = useWorkout(id!);
+  const { activeCoach } = useCoachContext();
 
   if (isLoading) {
     return (
@@ -35,13 +38,19 @@ export default function WorkoutDetailPage() {
     );
   }
 
+  const owned = isOwner(workout.coachId, activeCoach?.id);
+
   return (
     <div className="mx-auto max-w-3xl p-4">
       <Card className={`border-t-4 ${statusBorderColor[workout.status] ?? "border-t-primary"}`}>
         <CardContent className="space-y-6 p-6">
-          <WorkoutHeader workout={workout} />
+          <WorkoutHeader workout={workout} readOnly={!owned} />
           <Separator />
-          <WorkoutExerciseList exercises={workout.exercises} workoutId={workout.id} />
+          <WorkoutExerciseList
+            exercises={workout.exercises}
+            workoutId={workout.id}
+            readOnly={!owned}
+          />
         </CardContent>
       </Card>
     </div>

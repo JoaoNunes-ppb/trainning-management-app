@@ -8,9 +8,10 @@ import { AddExerciseDialog } from "./AddExerciseDialog";
 interface WorkoutExerciseListProps {
   exercises: WorkoutExerciseDetail[];
   workoutId: string;
+  readOnly?: boolean;
 }
 
-export function WorkoutExerciseList({ exercises, workoutId }: WorkoutExerciseListProps) {
+export function WorkoutExerciseList({ exercises, workoutId, readOnly = false }: WorkoutExerciseListProps) {
   const [addOpen, setAddOpen] = useState(false);
   const sorted = [...exercises].sort((a, b) => a.orderIndex - b.orderIndex);
 
@@ -18,10 +19,12 @@ export function WorkoutExerciseList({ exercises, workoutId }: WorkoutExerciseLis
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Exercícios</h2>
-        <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
-          <Plus className="size-4" data-icon="inline-start" />
-          Adicionar Exercício
-        </Button>
+        {!readOnly && (
+          <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
+            <Plus className="size-4" data-icon="inline-start" />
+            Adicionar Exercício
+          </Button>
+        )}
       </div>
 
       {sorted.length === 0 ? (
@@ -31,7 +34,7 @@ export function WorkoutExerciseList({ exercises, workoutId }: WorkoutExerciseLis
       ) : (
         <div className="flex flex-col gap-2">
           {sorted.map((we) => (
-            <WorkoutExerciseItem key={we.id} workoutExercise={we} workoutId={workoutId} />
+            <WorkoutExerciseItem key={we.id} workoutExercise={we} workoutId={workoutId} readOnly={readOnly} />
           ))}
         </div>
       )}

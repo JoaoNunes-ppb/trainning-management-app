@@ -79,7 +79,7 @@ export interface ExerciseResult {
 
 export type WorkoutStatus = "PENDING" | "COMPLETED" | "MISSED";
 
-export type CalendarViewMode = "all" | "byCoach" | "byAthlete";
+export type CalendarViewMode = "myAthletes" | "all" | "byAthlete";
 
 export type CalendarTimeScale = "day" | "week" | "month";
 

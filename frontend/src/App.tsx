@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 import CalendarPage from "@/pages/CalendarPage";
+import CoachesPage from "@/pages/CoachesPage";
 import AthletesPage from "@/pages/AthletesPage";
 import ExercisesPage from "@/pages/ExercisesPage";
 import WorkoutDetailPage from "@/pages/WorkoutDetailPage";
@@ -12,6 +13,7 @@ export default function App() {
       <Routes>
         <Route element={<AppLayout />}>
           <Route path="/" element={<CalendarPage />} />
+          <Route path="/coaches" element={<CoachesPage />} />
           <Route path="/athletes/:id" element={<AthleteProgressPage />} />
           <Route path="/athletes" element={<AthletesPage />} />
           <Route path="/exercises" element={<ExercisesPage />} />

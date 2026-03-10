@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import { pt } from "date-fns/locale";
-import { ArrowLeft, Pencil, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Loader2, Info } from "lucide-react";
 import { useUpdateWorkout, useDeleteWorkout, useUpdateWorkoutStatus } from "@/hooks/useWorkouts";
 import { useAthletes } from "@/hooks/useAthletes";
 import type { WorkoutDetail, WorkoutStatus } from "@/types";
@@ -46,9 +46,10 @@ function formatTime(time: string | null) {
 
 interface WorkoutHeaderProps {
   workout: WorkoutDetail;
+  readOnly?: boolean;
 }
 
-export function WorkoutHeader({ workout }: WorkoutHeaderProps) {
+export function WorkoutHeader({ workout, readOnly = false }: WorkoutHeaderProps) {
   const navigate = useNavigate();
   const updateMutation = useUpdateWorkout();
   const deleteMutation = useDeleteWorkout();
@@ -112,6 +113,13 @@ export function WorkoutHeader({ workout }: WorkoutHeaderProps) {
           </Button>
         </div>
 
+        {readOnly && (
+          <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
+            <Info className="h-4 w-4 shrink-0" />
+            Treino de atleta de outro treinador (apenas leitura)
+          </div>
+        )}
+
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
@@ -139,32 +147,34 @@ export function WorkoutHeader({ workout }: WorkoutHeaderProps) {
             )}
           </div>
 
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={openEdit}>
-                <Pencil className="size-3.5" data-icon="inline-start" />
-                Editar
-              </Button>
-              <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
-                <Trash2 className="size-3.5" data-icon="inline-start" />
-                Eliminar
-              </Button>
-            </div>
-            <div className="flex gap-1">
-              {(["PENDING", "COMPLETED", "MISSED"] as WorkoutStatus[]).map((s) => (
-                <Button
-                  key={s}
-                  variant={workout.status === s ? "default" : "outline"}
-                  size="sm"
-                  className="text-xs h-7 px-2"
-                  disabled={statusMutation.isPending}
-                  onClick={() => handleStatusChange(s)}
-                >
-                  {statusLabels[s]}
+          {!readOnly && (
+            <div className="flex flex-col items-end gap-2 shrink-0">
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={openEdit}>
+                  <Pencil className="size-3.5" data-icon="inline-start" />
+                  Editar
                 </Button>
-              ))}
+                <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+                  <Trash2 className="size-3.5" data-icon="inline-start" />
+                  Eliminar
+                </Button>
+              </div>
+              <div className="flex gap-1">
+                {(["PENDING", "COMPLETED", "MISSED"] as WorkoutStatus[]).map((s) => (
+                  <Button
+                    key={s}
+                    variant={workout.status === s ? "default" : "outline"}
+                    size="sm"
+                    className="text-xs h-7 px-2"
+                    disabled={statusMutation.isPending}
+                    onClick={() => handleStatusChange(s)}
+                  >
+                    {statusLabels[s]}
+                  </Button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

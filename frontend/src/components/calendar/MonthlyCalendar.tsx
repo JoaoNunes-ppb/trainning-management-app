@@ -10,6 +10,7 @@ import {
 } from "date-fns";
 import { pt } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useCoachContext } from "@/context/CoachContext";
 import { useCalendarWorkouts } from "@/hooks/useCalendar";
 import {
   getMonthStart,
@@ -27,8 +28,6 @@ interface MonthlyCalendarProps {
   onDayClick: (date: Date) => void;
   viewMode: CalendarViewMode;
   onViewModeChange: (mode: CalendarViewMode) => void;
-  selectedCoachId: string | undefined;
-  onCoachChange: (id: string) => void;
   selectedAthleteId: string | undefined;
   onAthleteChange: (id: string) => void;
 }
@@ -45,11 +44,10 @@ export default function MonthlyCalendar({
   onDayClick,
   viewMode,
   onViewModeChange,
-  selectedCoachId,
-  onCoachChange,
   selectedAthleteId,
   onAthleteChange,
 }: MonthlyCalendarProps) {
+  const { activeCoach } = useCoachContext();
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
 
   const monthStart = getMonthStart(currentMonth);
@@ -57,7 +55,7 @@ export default function MonthlyCalendar({
   const gridStart = getWeekStart(monthStart);
   const gridEnd = getWeekEnd(monthEnd);
 
-  const filterCoachId = viewMode === "byCoach" ? selectedCoachId : undefined;
+  const filterCoachId = viewMode === "myAthletes" ? activeCoach?.id : undefined;
   const filterAthleteId =
     viewMode === "byAthlete" ? selectedAthleteId : undefined;
 
@@ -119,8 +117,6 @@ export default function MonthlyCalendar({
       <CalendarFilterBar
         viewMode={viewMode}
         onViewModeChange={onViewModeChange}
-        selectedCoachId={selectedCoachId}
-        onCoachChange={onCoachChange}
         selectedAthleteId={selectedAthleteId}
         onAthleteChange={onAthleteChange}
       />

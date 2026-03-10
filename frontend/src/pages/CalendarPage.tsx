@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import { useCoachContext } from "@/context/CoachContext";
 import { Button } from "@/components/ui/button";
 import WeeklyCalendar from "@/components/calendar/WeeklyCalendar";
 import MonthlyCalendar from "@/components/calendar/MonthlyCalendar";
@@ -13,28 +12,17 @@ const timeScales: { value: CalendarTimeScale; label: string }[] = [
 ];
 
 export default function CalendarPage() {
-  const { activeCoach } = useCoachContext();
-
   const [timeScale, setTimeScale] = useState<CalendarTimeScale>("week");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-  const [viewMode, setViewMode] = useState<CalendarViewMode>("byCoach");
-  const [selectedCoachId, setSelectedCoachId] = useState<string | undefined>(
-    activeCoach?.id,
-  );
+  const [viewMode, setViewMode] = useState<CalendarViewMode>("myAthletes");
   const [selectedAthleteId, setSelectedAthleteId] = useState<
     string | undefined
   >();
 
-  const handleViewModeChange = useCallback(
-    (mode: CalendarViewMode) => {
-      setViewMode(mode);
-      if (mode === "byCoach" && !selectedCoachId && activeCoach) {
-        setSelectedCoachId(activeCoach.id);
-      }
-    },
-    [selectedCoachId, activeCoach],
-  );
+  const handleViewModeChange = useCallback((mode: CalendarViewMode) => {
+    setViewMode(mode);
+  }, []);
 
   const handleMonthDayClick = useCallback((date: Date) => {
     setSelectedDate(date);
@@ -44,8 +32,6 @@ export default function CalendarPage() {
   const filterProps = {
     viewMode,
     onViewModeChange: handleViewModeChange,
-    selectedCoachId,
-    onCoachChange: setSelectedCoachId,
     selectedAthleteId,
     onAthleteChange: setSelectedAthleteId,
   };
