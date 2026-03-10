@@ -1,1 +1,40 @@
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === IDEs ===
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# === Cursor ===
+.cursor/
+
+# === Backend (Maven / Java / Kotlin) ===
+backend/target/
+backend/*.jar
+backend/.mvn/local-settings.xml
+
+# === Frontend (Node / Vite) ===
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.production
+
+# === Docker ===
 pgdata/
+
+# === Environment / Secrets ===
+.env
+.env.*
+!.env.example
+
+# === Logs ===
+*.log
+
+# === Misc ===
+*.png
+*.jpg
+*.jpeg
