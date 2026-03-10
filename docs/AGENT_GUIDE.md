@@ -802,6 +802,7 @@ STEP 13 -- Verify:
 IMPORTANT:
 - Do NOT implement any real page content. Only the scaffold.
 - Make the layout look professional with good spacing, colors, and typography.
+- ALL user-facing text (sidebar links, page titles, top bar) MUST be in Portuguese (pt-PT). See section 8 of FRONTEND_ARCHITECTURE.md for the full translation reference. Code, variables, and types stay in English.
 - Run npm run dev and verify it works before finishing.
 ```
 
@@ -906,6 +907,7 @@ IMPORTANT:
 - Do NOT modify types, API client, or routing setup.
 - Use shadcn/ui components everywhere (Button, Dialog, Input, Table, Select, Label, Textarea).
 - Use toast (from sonner) for success/error feedback.
+- ALL user-facing text (labels, headings, buttons, placeholders, table headers, toasts, empty states, confirmation messages) MUST be in Portuguese (pt-PT). See section 8 of FRONTEND_ARCHITECTURE.md for the full translation reference. Code, variables, and types stay in English.
 ```
 
 ---
@@ -986,6 +988,7 @@ IMPORTANT:
 - Do NOT modify existing files except replacing the ExercisesPage placeholder.
 - Parameter badges should be visually distinct (use different Badge variants or colors).
 - Use toast for all success/error feedback.
+- ALL user-facing text MUST be in Portuguese (pt-PT). Use the translation table in section 8 of FRONTEND_ARCHITECTURE.md. Parameter labels: "Séries", "Repetições", "Peso (kg)", "Distância (m)", "Tempo (s)". Code stays in English.
 ```
 
 ---
@@ -1089,6 +1092,7 @@ IMPORTANT:
 - Use date-fns for ALL date calculations. Always use weekStartsOn: 1 (Monday).
 - The 7-column grid must look balanced and professional.
 - Handle loading states with skeleton/spinner.
+- ALL user-facing text MUST be in Portuguese (pt-PT). Day headers: Seg, Ter, Qua, Qui, Sex, Sáb, Dom. Buttons: "Hoje", "Todos os Atletas", "Por Treinador", "Por Atleta". Use date-fns pt locale for date formatting. See section 8 of FRONTEND_ARCHITECTURE.md. Code stays in English.
 ```
 
 ---
@@ -1148,6 +1152,7 @@ IMPORTANT:
 - Only modify workouts.ts (add function) and WeeklyCalendar.tsx (add dialog state and handler).
 - Create WorkoutForm.tsx and useWorkouts.ts as new files.
 - The form should be clean and easy to use.
+- ALL user-facing text MUST be in Portuguese (pt-PT). E.g., "Novo Treino", "Título", "Data", "Guardar", "Cancelar", "Selecionar treinador". See section 8 of FRONTEND_ARCHITECTURE.md. Code stays in English.
 ```
 
 ---
@@ -1258,6 +1263,7 @@ IMPORTANT:
 - Only modify workouts.ts (add functions) and useWorkouts.ts (add hooks).
 - Create all component files as new. Replace WorkoutDetailPage placeholder.
 - CRITICAL: Only show parameter input fields that are enabled on the exercise template. Use the exercise.hasSets, exercise.hasReps, etc. flags.
+- ALL user-facing text MUST be in Portuguese (pt-PT). E.g., "Detalhe do Treino", "Adicionar Exercício", "Editar", "Eliminar", "Voltar ao Calendário", "Previsto", "Séries", "Repetições", "Peso (kg)", "Distância (m)", "Tempo (s)". See section 8 of FRONTEND_ARCHITECTURE.md. Code stays in English.
 ```
 
 ---
@@ -1329,6 +1335,7 @@ IMPORTANT:
 - Only modify WorkoutExerciseItem.tsx to integrate the ResultLogger.
 - CRITICAL: Only show parameter fields that are enabled on the exercise template.
 - The expected vs actual visual distinction should be clear and clean.
+- ALL user-facing text MUST be in Portuguese (pt-PT). E.g., "Registar Resultados", "Editar Resultados", "Limpar Resultados", "Guardar", "Previsto", "Realizado", "Resultados guardados", "Resultados limpos". See section 8 of FRONTEND_ARCHITECTURE.md. Code stays in English.
 ```
 
 ---

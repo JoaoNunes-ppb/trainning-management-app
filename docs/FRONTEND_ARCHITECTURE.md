@@ -301,7 +301,97 @@ export const client = axios.create({
 });
 ```
 
-## 8. UI/UX Guidelines
+## 8. UI Language -- Portuguese (pt-PT)
+
+All user-facing text in the frontend MUST be written in **Portuguese (Portugal)**. The API endpoints, JSON field names, TypeScript types, variable names, and code remain in English. Only the visible UI text (labels, headings, buttons, placeholders, messages, tooltips) is in Portuguese.
+
+### Translation Reference
+
+| English | Portuguese |
+|---------|-----------|
+| Athlete Manager | Gestão de Atletas |
+| Calendar | Calendário |
+| Athletes | Atletas |
+| Exercises | Exercícios |
+| Workouts | Treinos |
+| Coach | Treinador |
+| Select a coach | Selecionar treinador |
+| Name | Nome |
+| Date of Birth | Data de Nascimento |
+| Notes | Notas |
+| Description | Descrição |
+| Add Athlete | Adicionar Atleta |
+| Edit Athlete | Editar Atleta |
+| Delete Athlete | Eliminar Atleta |
+| Add Exercise | Adicionar Exercício |
+| Edit Exercise | Editar Exercício |
+| Delete Exercise | Eliminar Exercício |
+| Add Workout | Adicionar Treino |
+| Edit Workout | Editar Treino |
+| Delete Workout | Eliminar Treino |
+| New Workout | Novo Treino |
+| Workout Detail | Detalhe do Treino |
+| Add Exercise to Workout | Adicionar Exercício ao Treino |
+| Exercise Library | Biblioteca de Exercícios |
+| Sets | Séries |
+| Reps | Repetições |
+| Weight (kg) | Peso (kg) |
+| Distance (m) | Distância (m) |
+| Time (s) | Tempo (s) |
+| Expected | Previsto |
+| Actual | Realizado |
+| Log Results | Registar Resultados |
+| Edit Results | Editar Resultados |
+| Clear Results | Limpar Resultados |
+| Results saved | Resultados guardados |
+| Results cleared | Resultados limpos |
+| Save | Guardar |
+| Cancel | Cancelar |
+| Delete | Eliminar |
+| Edit | Editar |
+| Confirm | Confirmar |
+| Back to Calendar | Voltar ao Calendário |
+| Today | Hoje |
+| All Athletes | Todos os Atletas |
+| By Coach | Por Treinador |
+| By Athlete | Por Atleta |
+| No athletes yet | Ainda não existem atletas |
+| No exercises yet | Ainda não existem exercícios |
+| No workouts yet | Ainda não existem treinos |
+| Please select a coach first | Por favor selecione um treinador primeiro |
+| Are you sure? | Tem a certeza? |
+| This action cannot be undone | Esta ação não pode ser revertida |
+| Created successfully | Criado com sucesso |
+| Updated successfully | Atualizado com sucesso |
+| Deleted successfully | Eliminado com sucesso |
+| Cannot delete exercise in use | Não é possível eliminar exercício em uso |
+| Label | Título |
+| Date | Data |
+| Actions | Ações |
+| exercises | exercícios |
+| Parameters | Parâmetros |
+| At least one parameter required | Pelo menos um parâmetro é obrigatório |
+
+### Day Names (Calendar Headers)
+
+| English | Portuguese |
+|---------|-----------|
+| Mon | Seg |
+| Tue | Ter |
+| Wed | Qua |
+| Thu | Qui |
+| Fri | Sex |
+| Sat | Sáb |
+| Sun | Dom |
+
+Use the `pt-PT` locale from date-fns when formatting dates:
+
+```typescript
+import { pt } from "date-fns/locale";
+format(date, "d 'de' MMMM", { locale: pt });
+```
+
+## 9. UI/UX Guidelines
 
 - **Clean, minimal design** using Tailwind's neutral color palette.
 - **shadcn/ui components** for buttons, inputs, selects, dialogs, cards, tables, toasts.
@@ -310,6 +400,7 @@ export const client = axios.create({
 - **Error states**: Toast notifications for failed operations.
 - **Empty states**: Helpful messages when there are no athletes, exercises, or workouts.
 - **Confirmation dialogs** for destructive actions (delete).
+- **All UI text in Portuguese (pt-PT)** -- see section 8 for the translation reference.
 
 ## 9. Implementation Order
 
