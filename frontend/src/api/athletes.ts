@@ -11,6 +11,9 @@ export const createAthlete = (data: {
   dateOfBirth?: string | null;
   coachId: string;
   notes?: string | null;
+  email: string;
+  weightKg?: number | null;
+  heightCm?: number | null;
 }) => client.post<Athlete>("/athletes", data).then((res) => res.data);
 
 export const updateAthlete = (
@@ -20,6 +23,9 @@ export const updateAthlete = (
     dateOfBirth?: string | null;
     coachId: string;
     notes?: string | null;
+    email: string;
+    weightKg?: number | null;
+    heightCm?: number | null;
   },
 ) => client.put<Athlete>(`/athletes/${id}`, data).then((res) => res.data);
 

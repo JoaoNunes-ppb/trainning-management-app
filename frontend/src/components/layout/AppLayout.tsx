@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Calendar, Users, Dumbbell, Shield, Menu, X, Settings } from "lucide-react";
+import { Calendar, Users, Dumbbell, Shield, Menu, X, Settings, BarChart3 } from "lucide-react";
 import { useCoaches } from "@/hooks/useCoaches";
 import { useCoachContext } from "@/context/CoachContext";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ const navItems = [
   { to: "/", label: "Calendário", icon: Calendar },
   { to: "/coaches", label: "Treinadores", icon: Shield },
   { to: "/athletes", label: "Atletas", icon: Users },
+  { to: "/estatisticas", label: "Estatísticas", icon: BarChart3 },
   { to: "/exercises", label: "Exercícios", icon: Dumbbell },
 ];
 

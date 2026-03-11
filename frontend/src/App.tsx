@@ -5,7 +5,7 @@ import CoachesPage from "@/pages/CoachesPage";
 import AthletesPage from "@/pages/AthletesPage";
 import ExercisesPage from "@/pages/ExercisesPage";
 import WorkoutDetailPage from "@/pages/WorkoutDetailPage";
-import AthleteProgressPage from "@/pages/AthleteProgressPage";
+import StatisticsPage from "@/pages/StatisticsPage";
 
 export default function App() {
   return (
@@ -14,9 +14,9 @@ export default function App() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<CalendarPage />} />
           <Route path="/coaches" element={<CoachesPage />} />
-          <Route path="/athletes/:id" element={<AthleteProgressPage />} />
           <Route path="/athletes" element={<AthletesPage />} />
           <Route path="/exercises" element={<ExercisesPage />} />
+          <Route path="/estatisticas" element={<StatisticsPage />} />
           <Route path="/workouts/:id" element={<WorkoutDetailPage />} />
         </Route>
       </Routes>

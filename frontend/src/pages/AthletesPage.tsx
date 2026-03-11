@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { Pencil, Trash2, Plus, Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useCoachContext } from "@/context/CoachContext";
@@ -35,9 +34,12 @@ interface AthleteFormData {
   name: string;
   dateOfBirth: string;
   notes: string;
+  email: string;
+  weightKg: string;
+  heightCm: string;
 }
 
-const emptyForm: AthleteFormData = { name: "", dateOfBirth: "", notes: "" };
+const emptyForm: AthleteFormData = { name: "", dateOfBirth: "", notes: "", email: "", weightKg: "", heightCm: "" };
 
 export default function AthletesPage() {
   const { activeCoach } = useCoachContext();
@@ -76,6 +78,9 @@ export default function AthletesPage() {
       name: athlete.name,
       dateOfBirth: athlete.dateOfBirth ?? "",
       notes: athlete.notes ?? "",
+      email: athlete.email ?? "",
+      weightKg: athlete.weightKg != null ? String(athlete.weightKg) : "",
+      heightCm: athlete.heightCm != null ? String(athlete.heightCm) : "",
     });
     setFormOpen(true);
   };
@@ -89,6 +94,9 @@ export default function AthletesPage() {
       dateOfBirth: form.dateOfBirth || null,
       coachId: activeCoach.id,
       notes: form.notes.trim() || null,
+      email: form.email.trim(),
+      weightKg: form.weightKg ? parseFloat(form.weightKg) : null,
+      heightCm: form.heightCm ? parseInt(form.heightCm) : null,
     };
 
     if (editingAthlete) {
@@ -164,6 +172,9 @@ export default function AthletesPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Peso (kg)</TableHead>
+              <TableHead>Altura (cm)</TableHead>
               <TableHead>Data de Nascimento</TableHead>
               <TableHead>Notas</TableHead>
               <TableHead className="w-24 text-right">Ações</TableHead>
@@ -173,13 +184,11 @@ export default function AthletesPage() {
             {athletes.map((a) => (
               <TableRow key={a.id}>
                 <TableCell>
-                  <Link
-                    to={`/athletes/${a.id}`}
-                    className="font-medium text-primary hover:underline"
-                  >
-                    {a.name}
-                  </Link>
+                  <span className="font-medium">{a.name}</span>
                 </TableCell>
+                <TableCell>{a.email || "—"}</TableCell>
+                <TableCell>{a.weightKg != null ? a.weightKg : "—"}</TableCell>
+                <TableCell>{a.heightCm != null ? a.heightCm : "—"}</TableCell>
                 <TableCell>{a.dateOfBirth ?? "—"}</TableCell>
                 <TableCell className="max-w-xs truncate">
                   {a.notes ?? "—"}
@@ -245,6 +254,50 @@ export default function AthletesPage() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, dateOfBirth: e.target.value }))
                 }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="athlete-email">Email *</Label>
+              <Input
+                id="athlete-email"
+                type="email"
+                required
+                value={form.email}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, email: e.target.value }))
+                }
+                placeholder="email@exemplo.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="athlete-weight">Peso (kg)</Label>
+              <Input
+                id="athlete-weight"
+                type="number"
+                step="0.1"
+                min="0"
+                value={form.weightKg}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, weightKg: e.target.value }))
+                }
+                placeholder="Ex: 75.0"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="athlete-height">Altura (cm)</Label>
+              <Input
+                id="athlete-height"
+                type="number"
+                step="1"
+                min="0"
+                value={form.heightCm}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, heightCm: e.target.value }))
+                }
+                placeholder="Ex: 178"
               />
             </div>
 

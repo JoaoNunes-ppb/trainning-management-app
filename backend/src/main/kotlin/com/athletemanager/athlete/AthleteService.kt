@@ -37,6 +37,9 @@ class AthleteService(
             name = request.name,
             dateOfBirth = request.dateOfBirth,
             notes = request.notes,
+            email = request.email,
+            weightKg = request.weightKg,
+            heightCm = request.heightCm,
             coach = coach
         )
         return athleteRepository.save(athlete).toResponse()
@@ -50,6 +53,9 @@ class AthleteService(
         athlete.name = request.name
         athlete.dateOfBirth = request.dateOfBirth
         athlete.notes = request.notes
+        athlete.email = request.email
+        athlete.weightKg = request.weightKg
+        athlete.heightCm = request.heightCm
         athlete.coach = coach
         return athleteRepository.save(athlete).toResponse()
     }

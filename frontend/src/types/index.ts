@@ -10,6 +10,9 @@ export interface Athlete {
   coachId: string;
   coachName: string;
   notes: string | null;
+  email: string;
+  weightKg: number | null;
+  heightCm: number | null;
 }
 
 export interface Exercise {
