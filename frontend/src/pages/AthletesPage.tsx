@@ -8,11 +8,19 @@ import {
   useUpdateAthlete,
   useDeleteAthlete,
 } from "@/hooks/useAthletes";
+import { useCoaches } from "@/hooks/useCoaches";
 import type { Athlete } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -37,13 +45,15 @@ interface AthleteFormData {
   email: string;
   weightKg: string;
   heightCm: string;
+  coachId: string;
 }
 
-const emptyForm: AthleteFormData = { name: "", dateOfBirth: "", notes: "", email: "", weightKg: "", heightCm: "" };
+const emptyForm: AthleteFormData = { name: "", dateOfBirth: "", notes: "", email: "", weightKg: "", heightCm: "", coachId: "" };
 
 export default function AthletesPage() {
   const { activeCoach } = useCoachContext();
   const { data: athletes, isLoading } = useAthletes(activeCoach?.id);
+  const { data: coaches } = useCoaches();
 
   const createMutation = useCreateAthlete();
   const updateMutation = useUpdateAthlete();
@@ -68,7 +78,7 @@ export default function AthletesPage() {
 
   const openCreate = () => {
     setEditingAthlete(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, coachId: activeCoach.id });
     setFormOpen(true);
   };
 
@@ -81,6 +91,7 @@ export default function AthletesPage() {
       email: athlete.email ?? "",
       weightKg: athlete.weightKg != null ? String(athlete.weightKg) : "",
       heightCm: athlete.heightCm != null ? String(athlete.heightCm) : "",
+      coachId: athlete.coachId,
     });
     setFormOpen(true);
   };
@@ -92,7 +103,7 @@ export default function AthletesPage() {
     const payload = {
       name: form.name.trim(),
       dateOfBirth: form.dateOfBirth || null,
-      coachId: activeCoach.id,
+      coachId: form.coachId,
       notes: form.notes.trim() || null,
       email: form.email.trim(),
       weightKg: form.weightKg ? parseFloat(form.weightKg) : null,
@@ -104,7 +115,8 @@ export default function AthletesPage() {
         { id: editingAthlete.id, ...payload },
         {
           onSuccess: () => {
-            toast.success("Atleta atualizado");
+            const transferred = editingAthlete && form.coachId !== editingAthlete.coachId;
+            toast.success(transferred ? "Atleta transferido com sucesso" : "Atleta atualizado");
             setFormOpen(false);
           },
           onError: () => toast.error("Erro ao atualizar atleta"),
@@ -312,6 +324,39 @@ export default function AthletesPage() {
                 placeholder="Notas opcionais..."
               />
             </div>
+
+            {editingAthlete ? (
+              <div className="space-y-2">
+                <Label htmlFor="athlete-coach">Treinador</Label>
+                <Select
+                  value={form.coachId}
+                  onValueChange={(val) => val && setForm((f) => ({ ...f, coachId: val }))}
+                >
+                  <SelectTrigger id="athlete-coach">
+                    <SelectValue placeholder="Selecionar treinador...">
+                      {coaches?.find((c) => c.id === form.coachId)?.name ?? form.coachId}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {coaches?.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.coachId !== editingAthlete.coachId && (
+                  <p className="text-sm text-amber-600 dark:text-amber-400">
+                    ⚠ Ao guardar, este atleta será transferido para o treinador selecionado e deixará de aparecer na sua lista.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Treinador</Label>
+                <p className="text-sm text-muted-foreground">{activeCoach.name}</p>
+              </div>
+            )}
 
             <DialogFooter>
               <Button type="submit" disabled={isSaving}>
