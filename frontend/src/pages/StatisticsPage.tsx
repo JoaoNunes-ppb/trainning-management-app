@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { format, parseISO } from "date-fns";
 import { pt } from "date-fns/locale/pt";
 import {
@@ -28,6 +28,7 @@ import { exerciseDisplayName } from "@/lib/exerciseUtils";
 import type { WorkoutProgressItem, WorkoutStatus } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardHeader,
@@ -241,11 +242,44 @@ export default function StatisticsPage() {
   const selectedAthlete = athletes?.find((a) => a.id === selectedAthleteId) ?? null;
   const { data, isLoading: progressLoading } = useAthleteProgress(selectedAthleteId ?? "");
   const [showProgress, setShowProgress] = useState(false);
+  const [visibleExercises, setVisibleExercises] = useState<Set<string>>(new Set());
 
   const athleteItems = athletes?.reduce<Record<string, string>>(
     (acc, a) => ({ ...acc, [a.id]: a.name }),
     {},
   ) ?? {};
+
+  const exerciseMap = useMemo(() => {
+    const map = new Map<string, { name: string; modality: string | null; kineoType: string | null }>();
+    if (!data) return map;
+    for (const w of data.workouts) {
+      for (const ex of w.exercises) {
+        if (!map.has(ex.exerciseId)) {
+          map.set(ex.exerciseId, { name: ex.exerciseName, modality: ex.modality, kineoType: ex.kineoType });
+        }
+      }
+    }
+    return map;
+  }, [data]);
+
+  const toggleExercise = useCallback((exerciseId: string) => {
+    setVisibleExercises((prev) => {
+      const next = new Set(prev);
+      if (next.has(exerciseId)) {
+        next.delete(exerciseId);
+      } else {
+        next.add(exerciseId);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleAll = useCallback(() => {
+    setVisibleExercises((prev) => {
+      if (prev.size === exerciseMap.size) return new Set();
+      return new Set(exerciseMap.keys());
+    });
+  }, [exerciseMap]);
 
   if (!activeCoach) {
     return (
@@ -275,6 +309,7 @@ export default function StatisticsPage() {
           onValueChange={(val) => {
             setSelectedAthleteId(val as string);
             setShowProgress(false);
+            setVisibleExercises(new Set());
           }}
           items={athleteItems}
         >
@@ -413,26 +448,51 @@ export default function StatisticsPage() {
             </div>
 
             {showProgress && data.workouts.length > 0 && (
-              <div className="space-y-4 rounded-lg border border-border bg-muted/30 p-4">
-                {(() => {
-                  const exerciseIds = new Map<string, { name: string; modality: string | null; kineoType: string | null }>();
-                  for (const w of data.workouts) {
-                    for (const ex of w.exercises) {
-                      if (!exerciseIds.has(ex.exerciseId)) {
-                        exerciseIds.set(ex.exerciseId, { name: ex.exerciseName, modality: ex.modality, kineoType: ex.kineoType });
-                      }
-                    }
-                  }
-                  return Array.from(exerciseIds.entries()).map(([exId, info]) => (
-                    <ExerciseChart
-                      key={exId}
-                      exerciseName={exerciseDisplayName(info.name, info.modality, info.kineoType)}
-                      exerciseId={exId}
-                      allWorkouts={data.workouts}
-                      highlightWorkoutId=""
-                    />
-                  ));
-                })()}
+              <div className="space-y-4">
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Exercícios ({visibleExercises.size}/{exerciseMap.size})
+                    </p>
+                    <Button variant="ghost" size="sm" onClick={toggleAll} className="text-xs h-7">
+                      {visibleExercises.size === exerciseMap.size ? "Desmarcar Todos" : "Selecionar Todos"}
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-x-5 gap-y-2">
+                    {Array.from(exerciseMap.entries()).map(([exId, info]) => {
+                      const label = exerciseDisplayName(info.name, info.modality, info.kineoType);
+                      const checked = visibleExercises.has(exId);
+                      return (
+                        <label key={exId} className="flex items-center gap-2 cursor-pointer select-none">
+                          <Checkbox checked={checked} onCheckedChange={() => toggleExercise(exId)} />
+                          <span className="text-sm">{label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {visibleExercises.size > 0 && (
+                  <div className="space-y-4 rounded-lg border border-border bg-muted/30 p-4">
+                    {Array.from(exerciseMap.entries())
+                      .filter(([exId]) => visibleExercises.has(exId))
+                      .map(([exId, info]) => (
+                        <ExerciseChart
+                          key={exId}
+                          exerciseName={exerciseDisplayName(info.name, info.modality, info.kineoType)}
+                          exerciseId={exId}
+                          allWorkouts={data.workouts}
+                          highlightWorkoutId=""
+                        />
+                      ))}
+                  </div>
+                )}
+
+                {visibleExercises.size === 0 && (
+                  <p className="py-6 text-center text-sm text-muted-foreground">
+                    Selecione pelo menos um exercício acima para ver os gráficos de progresso.
+                  </p>
+                )}
               </div>
             )}
 
