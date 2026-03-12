@@ -60,6 +60,19 @@ rm -rf ./pgdata
 docker compose up -d --build
 ```
 
+### Testes
+
+```bash
+# Backend (78 testes unitários — MockK + JUnit 5)
+cd backend && mvn test
+
+# Frontend (81 testes — Vitest + React Testing Library)
+cd frontend && npm test
+
+# Frontend com relatório de cobertura
+cd frontend && npm run test:coverage
+```
+
 ---
 
 ## Visão Geral
