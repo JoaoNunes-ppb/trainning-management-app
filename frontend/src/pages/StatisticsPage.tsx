@@ -24,6 +24,7 @@ import {
 import { useCoachContext } from "@/context/CoachContext";
 import { useAthletes } from "@/hooks/useAthletes";
 import { useAthleteProgress } from "@/hooks/useAthleteProgress";
+import { exerciseDisplayName } from "@/lib/exerciseUtils";
 import type { WorkoutProgressItem, WorkoutStatus } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +71,9 @@ const METRICS: MetricDef[] = [
   { key: "reps", label: "Repetições", color: "#10b981" },
   { key: "distance", label: "Distância (m)", color: "#f59e0b" },
   { key: "time", label: "Tempo (s)", color: "#ef4444" },
+  { key: "concentricLoad", label: "Carga Concêntrica (kg)", color: "#06b6d4" },
+  { key: "eccentricLoad", label: "Carga Excêntrica (kg)", color: "#d946ef" },
+  { key: "isometricLoad", label: "Carga Isométrica (kg)", color: "#f97316" },
 ];
 
 interface DataPoint {
@@ -81,6 +85,9 @@ interface DataPoint {
   reps: number | null;
   distance: number | null;
   time: number | null;
+  concentricLoad: number | null;
+  eccentricLoad: number | null;
+  isometricLoad: number | null;
 }
 
 function getExerciseTimeSeries(
@@ -103,6 +110,9 @@ function getExerciseTimeSeries(
         reps: ex.repsActual,
         distance: ex.distanceActual,
         time: ex.timeActual,
+        concentricLoad: ex.concentricLoadActual,
+        eccentricLoad: ex.eccentricLoadActual,
+        isometricLoad: ex.isometricLoadActual,
       };
     });
 }
@@ -405,18 +415,18 @@ export default function StatisticsPage() {
             {showProgress && data.workouts.length > 0 && (
               <div className="space-y-4 rounded-lg border border-border bg-muted/30 p-4">
                 {(() => {
-                  const exerciseIds = new Map<string, string>();
+                  const exerciseIds = new Map<string, { name: string; modality: string | null; kineoType: string | null }>();
                   for (const w of data.workouts) {
                     for (const ex of w.exercises) {
                       if (!exerciseIds.has(ex.exerciseId)) {
-                        exerciseIds.set(ex.exerciseId, ex.exerciseName);
+                        exerciseIds.set(ex.exerciseId, { name: ex.exerciseName, modality: ex.modality, kineoType: ex.kineoType });
                       }
                     }
                   }
-                  return Array.from(exerciseIds.entries()).map(([exId, exName]) => (
+                  return Array.from(exerciseIds.entries()).map(([exId, info]) => (
                     <ExerciseChart
                       key={exId}
-                      exerciseName={exName}
+                      exerciseName={exerciseDisplayName(info.name, info.modality, info.kineoType)}
                       exerciseId={exId}
                       allWorkouts={data.workouts}
                       highlightWorkoutId=""

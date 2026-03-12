@@ -8,6 +8,9 @@ export interface UpsertResultPayload {
   distance?: number | null;
   time?: number | null;
   notes?: string | null;
+  concentricLoad?: number | null;
+  eccentricLoad?: number | null;
+  isometricLoad?: number | null;
 }
 
 export const upsertResult = (workoutExerciseId: string, data: UpsertResultPayload) =>

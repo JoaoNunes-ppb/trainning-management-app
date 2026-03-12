@@ -86,6 +86,9 @@ export interface ExerciseResult {
   distance: number | null;
   time: number | null;
   notes: string | null;
+  concentricLoad: number | null;
+  eccentricLoad: number | null;
+  isometricLoad: number | null;
 }
 
 export type WorkoutStatus = "PENDING" | "COMPLETED" | "MISSED";
@@ -121,15 +124,23 @@ export interface WorkoutProgressItem {
 export interface ExerciseProgressItem {
   exerciseId: string;
   exerciseName: string;
+  modality: string | null;
+  kineoType: string | null;
   setsExpected: number | null;
   repsExpected: number | null;
   weightExpected: number | null;
   distanceExpected: number | null;
   timeExpected: number | null;
+  concentricLoadExpected: number | null;
+  eccentricLoadExpected: number | null;
+  isometricLoadExpected: number | null;
   setsActual: number | null;
   repsActual: number | null;
   weightActual: number | null;
   distanceActual: number | null;
   timeActual: number | null;
+  concentricLoadActual: number | null;
+  eccentricLoadActual: number | null;
+  isometricLoadActual: number | null;
   hasResult: boolean;
 }

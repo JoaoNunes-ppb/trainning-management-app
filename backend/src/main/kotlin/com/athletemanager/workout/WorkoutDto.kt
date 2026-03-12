@@ -109,5 +109,8 @@ data class ExerciseResultInfo(
     val weight: BigDecimal?,
     val distance: BigDecimal?,
     val time: Int?,
-    val notes: String?
+    val notes: String?,
+    val concentricLoad: BigDecimal?,
+    val eccentricLoad: BigDecimal?,
+    val isometricLoad: BigDecimal?
 )

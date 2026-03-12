@@ -35,16 +35,24 @@ class AthleteProgressService(
                     ExerciseProgressItem(
                         exerciseId = we.exercise.id!!,
                         exerciseName = we.exercise.name,
+                        modality = we.exercise.modality.name,
+                        kineoType = we.exercise.kineoType?.name,
                         setsExpected = we.setsExpected,
                         repsExpected = we.repsExpected,
                         weightExpected = we.weightExpected,
                         distanceExpected = we.distanceExpected,
                         timeExpected = we.timeExpected,
+                        concentricLoadExpected = we.concentricLoad,
+                        eccentricLoadExpected = we.eccentricLoad,
+                        isometricLoadExpected = we.isometricLoad,
                         setsActual = result?.sets,
                         repsActual = result?.reps,
                         weightActual = result?.weight,
                         distanceActual = result?.distance,
                         timeActual = result?.time,
+                        concentricLoadActual = result?.concentricLoad,
+                        eccentricLoadActual = result?.eccentricLoad,
+                        isometricLoadActual = result?.isometricLoad,
                         hasResult = result != null
                     )
                 }

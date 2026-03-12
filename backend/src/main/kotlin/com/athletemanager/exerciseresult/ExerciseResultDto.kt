@@ -9,7 +9,10 @@ data class UpsertExerciseResultRequest(
     val weight: BigDecimal? = null,
     val distance: BigDecimal? = null,
     val time: Int? = null,
-    val notes: String? = null
+    val notes: String? = null,
+    val concentricLoad: BigDecimal? = null,
+    val eccentricLoad: BigDecimal? = null,
+    val isometricLoad: BigDecimal? = null
 )
 
 data class ExerciseResultResponse(
@@ -20,5 +23,8 @@ data class ExerciseResultResponse(
     val weight: BigDecimal?,
     val distance: BigDecimal?,
     val time: Int?,
-    val notes: String?
+    val notes: String?,
+    val concentricLoad: BigDecimal?,
+    val eccentricLoad: BigDecimal?,
+    val isometricLoad: BigDecimal?
 )

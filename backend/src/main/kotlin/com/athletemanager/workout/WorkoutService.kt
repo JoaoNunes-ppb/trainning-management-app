@@ -86,7 +86,10 @@ class WorkoutService(
                         weight = it.weight,
                         distance = it.distance,
                         time = it.time,
-                        notes = it.notes
+                        notes = it.notes,
+                        concentricLoad = it.concentricLoad,
+                        eccentricLoad = it.eccentricLoad,
+                        isometricLoad = it.isometricLoad
                     )
                 }
             )

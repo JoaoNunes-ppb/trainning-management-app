@@ -30,6 +30,8 @@ export function ResultLogger({ workoutExercise, workoutId }: ResultLoggerProps) 
   const ex = workoutExercise.exercise;
   const result = workoutExercise.result;
   const hasResult = result !== null;
+  const isKineo = ex.modality === "KINEO";
+  const kineoType = ex.kineoType;
 
   const [sets, setSets] = useState("");
   const [reps, setReps] = useState("");
@@ -37,6 +39,9 @@ export function ResultLogger({ workoutExercise, workoutId }: ResultLoggerProps) 
   const [distance, setDistance] = useState("");
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
+  const [concentricLoad, setConcentricLoad] = useState("");
+  const [eccentricLoad, setEccentricLoad] = useState("");
+  const [isometricLoad, setIsometricLoad] = useState("");
 
   const openForm = () => {
     setSets(result?.sets?.toString() ?? "");
@@ -45,6 +50,9 @@ export function ResultLogger({ workoutExercise, workoutId }: ResultLoggerProps) 
     setDistance(result?.distance?.toString() ?? "");
     setTime(result?.time?.toString() ?? "");
     setNotes(result?.notes ?? "");
+    setConcentricLoad(result?.concentricLoad?.toString() ?? "");
+    setEccentricLoad(result?.eccentricLoad?.toString() ?? "");
+    setIsometricLoad(result?.isometricLoad?.toString() ?? "");
     setExpanded(true);
   };
 
@@ -68,6 +76,9 @@ export function ResultLogger({ workoutExercise, workoutId }: ResultLoggerProps) 
           distance: ex.hasDistance && distance ? Number(distance) : null,
           time: ex.hasTime && time ? Number(time) : null,
           notes: notes.trim() || null,
+          concentricLoad: isKineo && kineoType !== "ISOMETRICO" && concentricLoad ? Number(concentricLoad) : null,
+          eccentricLoad: isKineo && kineoType !== "ISOMETRICO" && eccentricLoad ? Number(eccentricLoad) : null,
+          isometricLoad: isKineo && kineoType === "ISOMETRICO" && isometricLoad ? Number(isometricLoad) : null,
         },
       },
       { onSuccess: () => setExpanded(false) },
@@ -184,6 +195,59 @@ export function ResultLogger({ workoutExercise, workoutId }: ResultLoggerProps) 
                   onChange={(e) => setTime(e.target.value)}
                   className="h-8 text-sm"
                 />
+              </div>
+            )}
+
+            {isKineo && kineoType === "ISOMETRICO" && (
+              <div className="space-y-1">
+                <Label htmlFor={`res-isometric-${workoutExercise.id}`} className="text-xs">
+                  Carga Isométrica Realizada (Kg)
+                </Label>
+                <Input
+                  id={`res-isometric-${workoutExercise.id}`}
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={isometricLoad}
+                  onChange={(e) => setIsometricLoad(e.target.value)}
+                  className="h-8 text-sm"
+                  placeholder="Ex: 50"
+                />
+              </div>
+            )}
+
+            {isKineo && kineoType && kineoType !== "ISOMETRICO" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor={`res-concentric-${workoutExercise.id}`} className="text-xs">
+                    Carga Conc. Realizada (Kg)
+                  </Label>
+                  <Input
+                    id={`res-concentric-${workoutExercise.id}`}
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={concentricLoad}
+                    onChange={(e) => setConcentricLoad(e.target.value)}
+                    className="h-8 text-sm"
+                    placeholder="Ex: 40"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor={`res-eccentric-${workoutExercise.id}`} className="text-xs">
+                    Carga Exc. Realizada (Kg)
+                  </Label>
+                  <Input
+                    id={`res-eccentric-${workoutExercise.id}`}
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={eccentricLoad}
+                    onChange={(e) => setEccentricLoad(e.target.value)}
+                    className="h-8 text-sm"
+                    placeholder="Ex: 60"
+                  />
+                </div>
               </div>
             )}
 

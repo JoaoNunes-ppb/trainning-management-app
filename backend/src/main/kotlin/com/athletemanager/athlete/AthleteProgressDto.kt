@@ -32,15 +32,23 @@ data class WorkoutProgressItem(
 data class ExerciseProgressItem(
     val exerciseId: UUID,
     val exerciseName: String,
+    val modality: String?,
+    val kineoType: String?,
     val setsExpected: Int?,
     val repsExpected: Int?,
     val weightExpected: BigDecimal?,
     val distanceExpected: BigDecimal?,
     val timeExpected: Int?,
+    val concentricLoadExpected: BigDecimal?,
+    val eccentricLoadExpected: BigDecimal?,
+    val isometricLoadExpected: BigDecimal?,
     val setsActual: Int?,
     val repsActual: Int?,
     val weightActual: BigDecimal?,
     val distanceActual: BigDecimal?,
     val timeActual: Int?,
+    val concentricLoadActual: BigDecimal?,
+    val eccentricLoadActual: BigDecimal?,
+    val isometricLoadActual: BigDecimal?,
     val hasResult: Boolean
 )

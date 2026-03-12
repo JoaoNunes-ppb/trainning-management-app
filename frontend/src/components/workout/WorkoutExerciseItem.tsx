@@ -47,6 +47,9 @@ function formatValues(
     if (ex.hasWeight && r.weight != null) parts.push(`${r.weight} kg`);
     if (ex.hasDistance && r.distance != null) parts.push(`${r.distance} m`);
     if (ex.hasTime && r.time != null) parts.push(`${r.time} s`);
+    if (r.concentricLoad != null) parts.push(`conc. ${r.concentricLoad} kg`);
+    if (r.eccentricLoad != null) parts.push(`exc. ${r.eccentricLoad} kg`);
+    if (r.isometricLoad != null) parts.push(`isom. ${r.isometricLoad} kg`);
   }
 
   if (parts.length === 0) return mode === "expected" ? "Sem objetivos definidos" : "";

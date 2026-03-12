@@ -36,6 +36,9 @@ class ExerciseResultService(
         result.distance = request.distance
         result.time = request.time
         result.notes = request.notes
+        result.concentricLoad = request.concentricLoad
+        result.eccentricLoad = request.eccentricLoad
+        result.isometricLoad = request.isometricLoad
 
         return exerciseResultRepository.save(result).toResponse()
     }
@@ -57,6 +60,9 @@ class ExerciseResultService(
         weight = this.weight,
         distance = this.distance,
         time = this.time,
-        notes = this.notes
+        notes = this.notes,
+        concentricLoad = this.concentricLoad,
+        eccentricLoad = this.eccentricLoad,
+        isometricLoad = this.isometricLoad
     )
 }
