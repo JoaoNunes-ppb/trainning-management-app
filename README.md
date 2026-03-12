@@ -1,181 +1,131 @@
 # Athlete Management App
 
+Aplicação web para gestão de atletas, treinos e exercícios num estúdio de treino.
+
 ---
 
 ## Getting Started
 
-### Prerequisites
+### Requisitos
 
-- [Docker](https://docs.docker.com/get-docker/) and Docker Compose (included with Docker Desktop)
+- [Docker](https://docs.docker.com/get-docker/) e Docker Compose (incluído no Docker Desktop)
 
-### Run with Docker (recommended)
-
-Start the full stack (PostgreSQL + Spring Boot + React/Nginx):
+### Arrancar a aplicação
 
 ```bash
 docker compose up -d --build
 ```
 
-The first build takes a few minutes (Maven dependencies + npm install). Subsequent builds use Docker layer caching.
+O primeiro build demora alguns minutos (dependências Maven + npm). Builds seguintes usam cache do Docker.
 
-Once all containers are running, open **http://localhost:3000** in your browser.
+Quando os containers estiverem a correr, abrir **http://localhost:3000** no browser.
 
-| Service  | URL                    |
-|----------|------------------------|
-| Frontend | http://localhost:3000   |
+| Serviço  | URL                              |
+|----------|----------------------------------|
+| Frontend | http://localhost:3000             |
 | API      | http://localhost:3000/api/coaches |
-| Backend  | http://localhost:8080   |
+| Backend  | http://localhost:8080             |
 
-### Useful commands
+### Acesso pela rede local
+
+Outros computadores na mesma rede podem aceder à app pelo IP da máquina:
+
+```
+http://<IP-DA-MAQUINA>:3000
+```
+
+### Comandos úteis
 
 ```bash
-# View running containers
+# Ver containers a correr
 docker compose ps
 
-# Follow logs (all services)
+# Ver logs (todos os serviços)
 docker compose logs -f
 
-# Follow logs (single service)
+# Ver logs (um serviço)
 docker compose logs -f app
 docker compose logs -f postgres
 docker compose logs -f frontend
 
-# Stop containers (data is preserved in ./pgdata)
+# Parar containers (dados preservados em ./pgdata)
 docker compose down
 
-# Rebuild after code changes
+# Reconstruir após alterações de código
 docker compose up -d --build
 
-# Reset database completely
+# Reset completo da base de dados
 docker compose down
 rm -rf ./pgdata
-docker compose up -d
+docker compose up -d --build
 ```
-
-### Run locally (without Docker)
-
-**Backend** (uses H2 in-memory database):
-
-```bash
-cd backend
-mvn clean install
-mvn spring-boot:run -Dspring-boot.run.profiles=local
-```
-
-Backend runs on http://localhost:8080. H2 console at http://localhost:8080/h2-console.
-
-**Frontend** (Vite dev server with hot reload):
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend runs on http://localhost:5173 and proxies API calls to the backend automatically.
 
 ---
 
-## Product Overview
+## Visão Geral
 
-The goal of this project is to build a **simple web application to manage athletes and their workouts** for a small coaching studio.
+Aplicação web para um estúdio de treino que permite aos treinadores:
 
-The system will allow coaches to **plan training sessions, organize workouts, and track what each athlete should do on each day** through a calendar interface.
+- Gerir **atletas**
+- Criar uma biblioteca de **exercícios** com diferentes modalidades (Livre, Kineo, Vald)
+- Construir **treinos** compostos por exercícios com valores previstos
+- Agendar treinos para atletas em dias específicos
+- Visualizar treinos num **calendário semanal**
+- **Registar resultados** de cada exercício (séries, repetições, peso, cargas Kineo, etc.)
+- Consultar **estatísticas e progresso** por atleta com gráficos de evolução
 
-The core idea is to provide a **clear and easy way to plan workouts across multiple athletes**, without using spreadsheets or scattered notes.
+### Modalidades de Exercício
 
-The application is intended for **small teams (for example 1–3 coaches managing a group of athletes)** and therefore the system should remain **simple, fast, and easy to use**.
-
-### Main Use Cases
-
-Coaches should be able to:
-
-- Create and manage **athletes**
-- Create a library of **exercises**
-- Build **workouts composed of exercises**
-- Schedule workouts for athletes on specific days
-- View all planned workouts in a **weekly calendar**
-
-The **calendar view** is the main feature of the product. It should allow coaches to easily see the workouts planned for each athlete and navigate between weeks.
-
-For example:
-
-- Monday: Strength workout for Athlete A
-- Tuesday: Running intervals for Athlete B
-- Wednesday: Rest day
-- Thursday: Cycling workout for Athlete C
-
-Exercises will be reusable templates that can be added to workouts, but each exercise inside a workout may contain **custom notes or parameters specific to that athlete or that training session**.
-
-The product focuses only on **workout planning**, not on tracking performance metrics or physiological data.
-
-### Scope
-
-Included in the first version:
-
-- Athlete management
-- Exercise library
-- Workout creation
-- Adding exercises to workouts
-- Weekly calendar visualization
-
-Out of scope for now:
-
-- Authentication
-- Payments
-- Notifications
-- Advanced analytics
-- Athlete performance tracking
+- **Livre** — exercício convencional
+- **Kineo** — exercício com máquina Kineo, requer tipo (Isotónico, Isométrico, Isocinético, Elástico, Viscoso, VLC) e cargas específicas por treino
+- **Vald** — exercício com equipamento Vald
 
 ---
 
-# Technology Overview
+## Stack Tecnológica
 
-The system will be built as a **full-stack web application** with a clear separation between **backend and frontend**.
+| Camada   | Tecnologia                                          |
+|----------|-----------------------------------------------------|
+| Frontend | React, TypeScript, Vite, Tailwind CSS, shadcn/ui    |
+| Backend  | Kotlin, Spring Boot, Spring Data JPA, Flyway         |
+| Base de dados | PostgreSQL 16                                   |
+| Infra    | Docker Compose, Nginx (proxy + SPA)                  |
 
-The goal is to use **modern, simple, and maintainable technologies** that are well suited for a small application.
+### Arquitectura
 
-## Backend
+```
+Browser → Nginx (:3000) → React SPA
+                        → /api/* proxy → Spring Boot (:8080) → PostgreSQL (:5432)
+```
 
-The backend will be responsible for:
+---
 
-- Managing the domain logic
-- Storing data
-- Exposing REST APIs used by the frontend
+## Estrutura do Projecto
 
-### Technologies
+```
+├── backend/                 # Kotlin/Spring Boot API
+│   ├── src/main/kotlin/     # Código fonte
+│   ├── src/main/resources/  # application.yml + migrações Flyway
+│   └── Dockerfile
+├── frontend/                # React/TypeScript SPA
+│   ├── src/                 # Código fonte
+│   ├── nginx.conf           # Configuração Nginx (proxy + SPA fallback)
+│   └── Dockerfile
+├── docs/                    # Documentação técnica
+├── docker-compose.yml       # Orquestração dos 3 serviços
+└── pgdata/                  # Volume PostgreSQL (gitignored)
+```
 
-Frontend:
-React with: Kotlin/JS wrapper
+---
 
-- **Kotlin** (primary language)
-- **Spring Boot**
-- **Spring Web (REST APIs)**
-- **Spring Data JPA**
-- **Relational Database**
+## Documentação
 
-### Database
-
-The application will use a relational database such as:
-
-- **PostgreSQL** (preferred) or Flyway, Database H2 (local)
-
-
-or
-
-- **SQLite** (acceptable for very small setups)
-
-The database will store:
-
-- coaches
-- athletes
-- exercises
-- workouts
-- workout exercises
-
-### Backend Architecture
-
-The backend will follow a typical **layered architecture**:
-
-!<img src="Screenshot 2026-03-06 at 16.46.51.png">
-
+| Ficheiro | Descrição |
+|----------|-----------|
+| `docs/PRD.md` | Product Requirements Document |
+| `docs/DATA_MODEL.md` | Modelo de dados e migrações SQL |
+| `docs/API_CONTRACT.md` | Contrato da API REST |
+| `docs/BACKEND_ARCHITECTURE.md` | Arquitectura do backend |
+| `docs/FRONTEND_ARCHITECTURE.md` | Arquitectura do frontend |
+| `docs/INFRASTRUCTURE.md` | Configuração Docker e infraestrutura |
+| `docs/EXERCISE_MODALITY.md` | Especificação das modalidades de exercício |

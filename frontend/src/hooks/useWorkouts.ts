@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getWorkout, createWorkout, updateWorkout, deleteWorkout, patchWorkoutStatus } from "@/api/workouts";
+import { getWorkout, createWorkout, updateWorkout, deleteWorkout, patchWorkoutStatus, copyWorkout } from "@/api/workouts";
 
 export function useWorkout(id: string) {
   return useQuery({
@@ -66,6 +66,26 @@ export function useUpdateWorkoutStatus() {
     },
     onError: () => {
       toast.error("Failed to update status");
+    },
+  });
+}
+
+export function useCopyWorkout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      sourceWorkoutId,
+      data,
+    }: {
+      sourceWorkoutId: string;
+      data: { date: string; scheduledTime?: string | null; label?: string | null };
+    }) => copyWorkout(sourceWorkoutId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["workouts"] });
+      toast.success("Treino copiado com sucesso");
+    },
+    onError: () => {
+      toast.error("Erro ao copiar treino");
     },
   });
 }

@@ -9,8 +9,7 @@
 | Spring Web | - | REST API layer |
 | Spring Data JPA | - | Data access |
 | Flyway | - | Database migrations |
-| PostgreSQL | 16+ | Production database |
-| H2 | - | Local development database |
+| PostgreSQL | 16+ | Database |
 | Maven | 3.9+ | Build tool |
 
 ## 2. Project Structure
@@ -71,8 +70,6 @@ backend/
 │   │   │       └── ExerciseResultDto.kt
 │   │   └── resources/
 │   │       ├── application.yml
-│   │       ├── application-local.yml
-│   │       ├── application-docker.yml
 │   │       └── db/migration/
 │   │           ├── V1__init.sql
 │   │           └── V2__seed.sql
@@ -92,7 +89,7 @@ flowchart TD
     Controller["Controller Layer"]
     Service["Service Layer"]
     Repository["Repository Layer"]
-    DB["PostgreSQL / H2"]
+    DB["PostgreSQL"]
 
     Client -->|"HTTP JSON"| Controller
     Controller -->|"DTO"| Service
@@ -215,7 +212,7 @@ class GlobalExceptionHandler {
 
 ## 6. Configuration
 
-### application.yml (shared)
+### application.yml
 
 ```yaml
 spring:
@@ -227,30 +224,6 @@ spring:
       write-dates-as-timestamps: false
   flyway:
     enabled: true
-```
-
-### application-local.yml (local dev with H2)
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:h2:mem:athletedb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-  jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
-    hibernate:
-      ddl-auto: validate
-  h2:
-    console:
-      enabled: true
-```
-
-### application-docker.yml (Docker with PostgreSQL)
-
-```yaml
-spring:
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:athletedb}
     username: ${DB_USER:athlete}
@@ -260,6 +233,8 @@ spring:
     hibernate:
       ddl-auto: validate
 ```
+
+As variáveis de ambiente (`DB_HOST`, `DB_PORT`, etc.) são passadas pelo `docker-compose.yml`. Os defaults apontam para `localhost` caso se corra fora do Docker com um PostgreSQL local.
 
 ## 7. CORS Configuration
 
@@ -334,11 +309,6 @@ class CorsConfig : WebMvcConfigurer {
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
             <scope>runtime</scope>
         </dependency>
         <dependency>

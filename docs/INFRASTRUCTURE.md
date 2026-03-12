@@ -2,12 +2,11 @@
 
 ## 1. Overview
 
-The application runs as two Docker containers orchestrated by Docker Compose:
+A aplicação corre como 3 containers Docker orquestrados por Docker Compose:
 
-1. **app** -- Spring Boot backend serving the REST API (and optionally the frontend static files)
-2. **postgres** -- PostgreSQL database with a persistent volume
-
-The frontend runs as a separate Vite dev server during development, and in production is built as static files served by an Nginx container or embedded into the Spring Boot jar.
+1. **postgres** -- Base de dados PostgreSQL com volume persistente
+2. **app** -- Backend Spring Boot a servir a API REST
+3. **frontend** -- Nginx a servir o React SPA e a fazer proxy da API
 
 ```mermaid
 flowchart LR
@@ -26,9 +25,7 @@ flowchart LR
 ## 2. Docker Compose
 
 ```yaml
-# docker-compose.yml (place at project root)
-version: "3.8"
-
+# docker-compose.yml (raiz do projecto)
 services:
   postgres:
     image: postgres:16-alpine
@@ -53,7 +50,6 @@ services:
       dockerfile: Dockerfile
     container_name: athlete-app
     environment:
-      SPRING_PROFILES_ACTIVE: docker
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: athletedb
@@ -76,20 +72,20 @@ services:
       - app
 ```
 
-### Data Persistence
+### Persistência de Dados
 
-The `./pgdata` volume mount maps the PostgreSQL data directory to a folder on the host filesystem. This ensures that:
+O volume `./pgdata` mapeia o directório de dados do PostgreSQL para o host. Isto garante que:
 
-- Data survives container restarts (`docker compose down` / `docker compose up`).
-- Data survives image rebuilds.
-- Data is only lost if you explicitly delete the `./pgdata` folder.
+- Os dados sobrevivem a restarts dos containers (`docker compose down` / `docker compose up`).
+- Os dados sobrevivem a rebuilds das imagens.
+- Os dados só se perdem se apagares explicitamente a pasta `./pgdata`.
 
-To reset the database completely:
+Para reset completo da base de dados:
 
 ```bash
 docker compose down
 rm -rf ./pgdata
-docker compose up -d
+docker compose up -d --build
 ```
 
 ## 3. Backend Dockerfile
@@ -111,8 +107,8 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
 
 Multi-stage build:
-1. **Build stage**: Uses Maven to compile and package the Spring Boot fat JAR.
-2. **Runtime stage**: Minimal JRE image runs the JAR.
+1. **Build stage**: Maven compila e empacota o fat JAR do Spring Boot.
+2. **Runtime stage**: Imagem JRE mínima corre o JAR.
 
 ## 4. Frontend Dockerfile
 
@@ -131,7 +127,7 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 ```
 
-### Nginx Configuration
+### Configuração Nginx
 
 ```nginx
 # frontend/nginx.conf
@@ -141,7 +137,7 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # API proxy to backend
+    # API proxy para o backend
     location /api/ {
         proxy_pass http://app:8080/api/;
         proxy_set_header Host $host;
@@ -155,95 +151,43 @@ server {
 }
 ```
 
-This configuration:
-- Proxies all `/api/` requests to the Spring Boot backend.
-- Serves the React SPA for all other routes (with HTML5 history fallback).
+Esta configuração:
+- Faz proxy de todos os pedidos `/api/` para o backend Spring Boot.
+- Serve o React SPA para todas as outras rotas (com HTML5 history fallback).
 
-## 5. Local Development (Without Docker)
+## 5. Variáveis de Ambiente
 
-For local development, you can run the backend and frontend separately without Docker:
+| Variável | Serviço | Default | Descrição |
+|----------|---------|---------|-----------|
+| `DB_HOST` | app | `localhost` | Host do PostgreSQL |
+| `DB_PORT` | app | `5432` | Porta do PostgreSQL |
+| `DB_NAME` | app | `athletedb` | Nome da base de dados |
+| `DB_USER` | app | `athlete` | Username da base de dados |
+| `DB_PASS` | app | `athlete` | Password da base de dados |
+| `POSTGRES_DB` | postgres | - | Base de dados a criar no primeiro arranque |
+| `POSTGRES_USER` | postgres | - | Nome do superuser |
+| `POSTGRES_PASSWORD` | postgres | - | Password do superuser |
 
-### Backend (H2 in-memory DB)
-
-```bash
-cd backend
-mvn clean install
-mvn spring-boot:run -Dspring-boot.run.profiles=local
-```
-
-Runs on `http://localhost:8080` with H2 in-memory database. The H2 console is available at `http://localhost:8080/h2-console`.
-
-### Frontend (Vite dev server)
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Runs on `http://localhost:5173` with hot module replacement. API calls proxy to `http://localhost:8080`.
-
-### Vite Proxy (for local dev)
-
-```typescript
-// vite.config.ts
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    port: 5173,
-    proxy: {
-      "/api": {
-        target: "http://localhost:8080",
-        changeOrigin: true,
-      },
-    },
-  },
-});
-```
-
-## 6. Environment Variables
-
-| Variable | Service | Default | Description |
-|----------|---------|---------|-------------|
-| `SPRING_PROFILES_ACTIVE` | app | `local` | Spring profile (`local` or `docker`) |
-| `DB_HOST` | app | `localhost` | PostgreSQL host |
-| `DB_PORT` | app | `5432` | PostgreSQL port |
-| `DB_NAME` | app | `athletedb` | Database name |
-| `DB_USER` | app | `athlete` | Database username |
-| `DB_PASS` | app | `athlete` | Database password |
-| `POSTGRES_DB` | postgres | - | Database to create on first run |
-| `POSTGRES_USER` | postgres | - | Superuser name |
-| `POSTGRES_PASSWORD` | postgres | - | Superuser password |
-| `VITE_API_URL` | frontend | `http://localhost:8080/api` | API base URL (only for dev; in prod, Nginx proxies) |
-
-## 7. Common Commands
+## 6. Comandos
 
 ```bash
-# Start everything
-docker compose up -d
-
-# Rebuild after code changes
+# Arrancar tudo
 docker compose up -d --build
 
-# View logs
+# Ver logs
 docker compose logs -f app
 docker compose logs -f postgres
+docker compose logs -f frontend
 
-# Stop (data persists in ./pgdata)
+# Parar (dados preservados em ./pgdata)
 docker compose down
 
-# Stop and destroy data
+# Parar e destruir dados
 docker compose down
 rm -rf ./pgdata
-
-# Build and test backend
-cd backend && mvn clean install
-
-# Run frontend in dev mode
-cd frontend && npm run dev
 ```
 
-## 8. Project Root Structure
+## 7. Estrutura Raiz
 
 ```
 trainning-management-app/
@@ -255,20 +199,17 @@ trainning-management-app/
 │   ├── API_CONTRACT.md
 │   ├── BACKEND_ARCHITECTURE.md
 │   ├── FRONTEND_ARCHITECTURE.md
-│   └── INFRASTRUCTURE.md
+│   ├── INFRASTRUCTURE.md
+│   └── EXERCISE_MODALITY.md
 ├── backend/
 │   ├── Dockerfile
 │   ├── pom.xml
 │   └── src/
-│       └── ...
 ├── frontend/
 │   ├── Dockerfile
 │   ├── nginx.conf
 │   ├── package.json
 │   ├── vite.config.ts
 │   └── src/
-│       └── ...
-└── pgdata/                  (gitignored, created by Docker)
+└── pgdata/                  (gitignored, criado pelo Docker)
 ```
-
-Add `pgdata/` to `.gitignore` to avoid committing database files.

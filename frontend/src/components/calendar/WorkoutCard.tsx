@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2, XCircle, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,11 +29,26 @@ function formatTime(time: string | null) {
 
 export default function WorkoutCard({ workout, isOwner = true }: WorkoutCardProps) {
   const navigate = useNavigate();
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    e.dataTransfer.setData("workoutId", workout.id);
+    e.dataTransfer.setData("sourceDate", workout.date);
+    e.dataTransfer.effectAllowed = "copy";
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
 
   return (
     <Card
       size="sm"
-      className={`cursor-pointer transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 ${statusStyles[workout.status] ?? ""} ${statusLeftBorder[workout.status] ?? ""} ${!isOwner ? "opacity-50 border-dashed" : ""}`}
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      className={`cursor-pointer transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 ${statusStyles[workout.status] ?? ""} ${statusLeftBorder[workout.status] ?? ""} ${!isOwner ? "opacity-50 border-dashed" : ""} ${isDragging ? "opacity-40" : ""}`}
       onClick={() => navigate(`/workouts/${workout.id}`)}
       title={!isOwner ? "Treino de outro treinador" : undefined}
     >

@@ -167,4 +167,40 @@ class WorkoutService(
         }
         workoutRepository.deleteById(id)
     }
+
+    fun copyWorkout(sourceWorkoutId: UUID, request: CopyWorkoutRequest): WorkoutDetailResponse {
+        val source = workoutRepository.findById(sourceWorkoutId)
+            .orElseThrow { ResourceNotFoundException("Workout not found with id: $sourceWorkoutId") }
+
+        val newWorkout = Workout(
+            label = request.label ?: source.label,
+            date = request.date,
+            scheduledTime = request.scheduledTime,
+            notes = source.notes,
+            status = "PENDING",
+            athlete = source.athlete
+        )
+        val saved = workoutRepository.save(newWorkout)
+
+        val sourceExercises = workoutExerciseRepository.findByWorkoutIdOrderByOrderIndex(sourceWorkoutId)
+        val copiedExercises = sourceExercises.map { we ->
+            com.athletemanager.workoutexercise.WorkoutExercise(
+                orderIndex = we.orderIndex,
+                notes = we.notes,
+                setsExpected = we.setsExpected,
+                repsExpected = we.repsExpected,
+                weightExpected = we.weightExpected,
+                distanceExpected = we.distanceExpected,
+                timeExpected = we.timeExpected,
+                concentricLoad = we.concentricLoad,
+                eccentricLoad = we.eccentricLoad,
+                isometricLoad = we.isometricLoad,
+                workout = saved,
+                exercise = we.exercise
+            )
+        }
+        workoutExerciseRepository.saveAll(copiedExercises)
+
+        return findDetailById(saved.id!!)
+    }
 }

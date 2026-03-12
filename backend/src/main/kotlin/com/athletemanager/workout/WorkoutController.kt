@@ -48,4 +48,11 @@ class WorkoutController(private val workoutService: WorkoutService) {
         workoutService.delete(id)
         return ResponseEntity.noContent().build()
     }
+
+    @PostMapping("/{id}/copy")
+    fun copy(
+        @PathVariable id: UUID,
+        @Valid @RequestBody request: CopyWorkoutRequest
+    ): ResponseEntity<WorkoutDetailResponse> =
+        ResponseEntity.status(HttpStatus.CREATED).body(workoutService.copyWorkout(id, request))
 }

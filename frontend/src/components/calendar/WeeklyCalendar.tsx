@@ -3,6 +3,7 @@ import { addWeeks, subWeeks, eachDayOfInterval, isSameDay, format } from "date-f
 import { Plus } from "lucide-react";
 import { useCoachContext } from "@/context/CoachContext";
 import { useCalendarWorkouts } from "@/hooks/useCalendar";
+import { useCopyWorkout } from "@/hooks/useWorkouts";
 import { useAthletes } from "@/hooks/useAthletes";
 import { getWeekStart, getWeekEnd, formatDateParam } from "@/lib/dateUtils";
 import { isOwner } from "@/lib/ownership";
@@ -114,6 +115,15 @@ export default function WeeklyCalendar({
     setShowCreateDialog(true);
   }, []);
 
+  const copyMutation = useCopyWorkout();
+
+  const handleDropWorkout = useCallback(
+    (workoutId: string, targetDate: string) => {
+      copyMutation.mutate({ sourceWorkoutId: workoutId, data: { date: targetDate } });
+    },
+    [copyMutation],
+  );
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
@@ -158,6 +168,7 @@ export default function WeeklyCalendar({
               onDayClick={handleDayClick}
               canCreate={canCreate}
               activeCoachId={activeCoach?.id}
+              onDropWorkout={handleDropWorkout}
             />
           ))}
         </div>

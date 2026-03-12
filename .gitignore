@@ -18,7 +18,7 @@ backend/*.jar
 backend/.mvn/local-settings.xml
 
 # === Frontend (Node / Vite) ===
-frontend/node_modules/
+node_modules/
 frontend/dist/
 frontend/.env.local
 frontend/.env.production

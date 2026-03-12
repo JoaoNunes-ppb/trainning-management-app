@@ -114,3 +114,9 @@ data class ExerciseResultInfo(
     val eccentricLoad: BigDecimal?,
     val isometricLoad: BigDecimal?
 )
+
+data class CopyWorkoutRequest(
+    @field:NotNull val date: LocalDate,
+    val scheduledTime: LocalTime? = null,
+    val label: String? = null
+)

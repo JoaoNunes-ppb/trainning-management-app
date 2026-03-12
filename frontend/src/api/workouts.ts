@@ -34,3 +34,11 @@ export const deleteWorkout = (id: string) =>
 
 export const patchWorkoutStatus = (id: string, status: string) =>
   client.patch<WorkoutSummary>(`/workouts/${id}/status`, { status }).then((res) => res.data);
+
+export const copyWorkout = (
+  sourceWorkoutId: string,
+  data: { date: string; scheduledTime?: string | null; label?: string | null },
+) =>
+  client
+    .post<WorkoutDetail>(`/workouts/${sourceWorkoutId}/copy`, data)
+    .then((res) => res.data);

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import { pt } from "date-fns/locale";
-import { ArrowLeft, Pencil, Trash2, Loader2, Info } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Loader2, Info, Copy } from "lucide-react";
 import { useUpdateWorkout, useDeleteWorkout, useUpdateWorkoutStatus } from "@/hooks/useWorkouts";
 import { useAthletes } from "@/hooks/useAthletes";
 import type { WorkoutDetail, WorkoutStatus } from "@/types";
@@ -26,6 +26,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { CopyWorkoutDialog } from "./CopyWorkoutDialog";
 
 const statusBadgeStyles: Record<WorkoutStatus, string> = {
   PENDING: "",
@@ -58,6 +59,7 @@ export function WorkoutHeader({ workout, readOnly = false }: WorkoutHeaderProps)
 
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
 
   const [label, setLabel] = useState("");
   const [date, setDate] = useState("");
@@ -150,6 +152,10 @@ export function WorkoutHeader({ workout, readOnly = false }: WorkoutHeaderProps)
           {!readOnly && (
             <div className="flex flex-col items-end gap-2 shrink-0">
               <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setCopyOpen(true)}>
+                  <Copy className="size-3.5" data-icon="inline-start" />
+                  Copiar
+                </Button>
                 <Button variant="outline" size="sm" onClick={openEdit}>
                   <Pencil className="size-3.5" data-icon="inline-start" />
                   Editar
@@ -281,6 +287,13 @@ export function WorkoutHeader({ workout, readOnly = false }: WorkoutHeaderProps)
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Copy Workout Dialog */}
+      <CopyWorkoutDialog
+        open={copyOpen}
+        onOpenChange={setCopyOpen}
+        sourceWorkout={workout}
+      />
     </>
   );
 }
