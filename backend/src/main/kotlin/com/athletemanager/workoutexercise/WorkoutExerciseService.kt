@@ -39,6 +39,9 @@ class WorkoutExerciseService(
             weightExpected = request.weightExpected,
             distanceExpected = request.distanceExpected,
             timeExpected = request.timeExpected,
+            concentricLoad = request.concentricLoad,
+            eccentricLoad = request.eccentricLoad,
+            isometricLoad = request.isometricLoad,
             workout = workout,
             exercise = exercise
         )
@@ -60,6 +63,9 @@ class WorkoutExerciseService(
         workoutExercise.weightExpected = request.weightExpected
         workoutExercise.distanceExpected = request.distanceExpected
         workoutExercise.timeExpected = request.timeExpected
+        workoutExercise.concentricLoad = request.concentricLoad
+        workoutExercise.eccentricLoad = request.eccentricLoad
+        workoutExercise.isometricLoad = request.isometricLoad
 
         return workoutExerciseRepository.save(workoutExercise).toResponse()
     }

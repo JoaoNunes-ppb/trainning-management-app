@@ -18,7 +18,10 @@ data class AddWorkoutExerciseRequest(
     val repsExpected: Int? = null,
     val weightExpected: BigDecimal? = null,
     val distanceExpected: BigDecimal? = null,
-    val timeExpected: Int? = null
+    val timeExpected: Int? = null,
+    val concentricLoad: BigDecimal? = null,
+    val eccentricLoad: BigDecimal? = null,
+    val isometricLoad: BigDecimal? = null
 )
 
 data class UpdateWorkoutExerciseRequest(
@@ -31,7 +34,10 @@ data class UpdateWorkoutExerciseRequest(
     val repsExpected: Int? = null,
     val weightExpected: BigDecimal? = null,
     val distanceExpected: BigDecimal? = null,
-    val timeExpected: Int? = null
+    val timeExpected: Int? = null,
+    val concentricLoad: BigDecimal? = null,
+    val eccentricLoad: BigDecimal? = null,
+    val isometricLoad: BigDecimal? = null
 )
 
 data class ReorderRequest(val orderedIds: List<UUID>)
@@ -46,7 +52,10 @@ data class WorkoutExerciseResponse(
     val repsExpected: Int?,
     val weightExpected: BigDecimal?,
     val distanceExpected: BigDecimal?,
-    val timeExpected: Int?
+    val timeExpected: Int?,
+    val concentricLoad: BigDecimal?,
+    val eccentricLoad: BigDecimal?,
+    val isometricLoad: BigDecimal?
 )
 
 fun WorkoutExercise.toResponse() = WorkoutExerciseResponse(
@@ -59,5 +68,8 @@ fun WorkoutExercise.toResponse() = WorkoutExerciseResponse(
     repsExpected = this.repsExpected,
     weightExpected = this.weightExpected,
     distanceExpected = this.distanceExpected,
-    timeExpected = this.timeExpected
+    timeExpected = this.timeExpected,
+    concentricLoad = this.concentricLoad,
+    eccentricLoad = this.eccentricLoad,
+    isometricLoad = this.isometricLoad
 )

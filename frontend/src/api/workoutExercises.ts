@@ -10,6 +10,9 @@ export interface WorkoutExercisePayload {
   weightExpected?: number | null;
   distanceExpected?: number | null;
   timeExpected?: number | null;
+  concentricLoad?: number | null;
+  eccentricLoad?: number | null;
+  isometricLoad?: number | null;
 }
 
 export interface WorkoutExerciseUpdatePayload {
@@ -20,6 +23,9 @@ export interface WorkoutExerciseUpdatePayload {
   weightExpected?: number | null;
   distanceExpected?: number | null;
   timeExpected?: number | null;
+  concentricLoad?: number | null;
+  eccentricLoad?: number | null;
+  isometricLoad?: number | null;
 }
 
 export const addExercise = (workoutId: string, data: WorkoutExercisePayload) =>

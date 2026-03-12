@@ -1,5 +1,5 @@
 import { client } from "./client";
-import type { Exercise } from "../types";
+import type { Exercise, Modality } from "../types";
 
 export interface ExercisePayload {
   name: string;
@@ -9,6 +9,8 @@ export interface ExercisePayload {
   hasWeight: boolean;
   hasDistance: boolean;
   hasTime: boolean;
+  modality: Modality;
+  kineoType?: string | null;
 }
 
 export const getExercises = () =>

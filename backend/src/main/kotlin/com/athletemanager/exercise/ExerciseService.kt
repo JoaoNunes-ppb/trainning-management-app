@@ -27,6 +27,7 @@ class ExerciseService(
 
     fun create(request: CreateExerciseRequest): ExerciseResponse {
         validateAtLeastOneParameter(request)
+        validateKineoFields(request)
         val exercise = Exercise(
             name = request.name,
             description = request.description,
@@ -34,13 +35,16 @@ class ExerciseService(
             hasReps = request.hasReps,
             hasWeight = request.hasWeight,
             hasDistance = request.hasDistance,
-            hasTime = request.hasTime
+            hasTime = request.hasTime,
+            modality = request.modality,
+            kineoType = request.kineoType
         )
         return exerciseRepository.save(exercise).toResponse()
     }
 
     fun update(id: UUID, request: CreateExerciseRequest): ExerciseResponse {
         validateAtLeastOneParameter(request)
+        validateKineoFields(request)
         val exercise = exerciseRepository.findById(id)
             .orElseThrow { ResourceNotFoundException("Exercise not found with id: $id") }
         exercise.name = request.name
@@ -50,6 +54,8 @@ class ExerciseService(
         exercise.hasWeight = request.hasWeight
         exercise.hasDistance = request.hasDistance
         exercise.hasTime = request.hasTime
+        exercise.modality = request.modality
+        exercise.kineoType = request.kineoType
         return exerciseRepository.save(exercise).toResponse()
     }
 
@@ -68,6 +74,12 @@ class ExerciseService(
             !request.hasDistance && !request.hasTime
         ) {
             throw BusinessRuleException("At least one parameter must be enabled")
+        }
+    }
+
+    private fun validateKineoFields(request: CreateExerciseRequest) {
+        if (request.modality == Modality.KINEO && request.kineoType == null) {
+            throw BusinessRuleException("Kineo type is required when modality is KINEO")
         }
     }
 }

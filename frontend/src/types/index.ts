@@ -15,6 +15,9 @@ export interface Athlete {
   heightCm: number | null;
 }
 
+export type Modality = "LIVRE" | "KINEO" | "VALD";
+export type KineoType = "ISOTONICO" | "ISOMETRICO" | "ISOCINETICO" | "ELASTICO" | "VISCOSO" | "VLC";
+
 export interface Exercise {
   id: string;
   name: string;
@@ -24,6 +27,8 @@ export interface Exercise {
   hasWeight: boolean;
   hasDistance: boolean;
   hasTime: boolean;
+  modality: Modality;
+  kineoType: KineoType | null;
 }
 
 export interface WorkoutSummary {
@@ -66,6 +71,9 @@ export interface WorkoutExerciseDetail {
   weightExpected: number | null;
   distanceExpected: number | null;
   timeExpected: number | null;
+  concentricLoad: number | null;
+  eccentricLoad: number | null;
+  isometricLoad: number | null;
   exercise: Exercise;
   result: ExerciseResult | null;
 }

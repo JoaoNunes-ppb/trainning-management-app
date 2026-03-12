@@ -34,6 +34,15 @@ class WorkoutExercise(
     @Column(name = "time_expected")
     var timeExpected: Int? = null,
 
+    @Column(name = "concentric_load", columnDefinition = "NUMERIC(10,2)")
+    var concentricLoad: BigDecimal? = null,
+
+    @Column(name = "eccentric_load", columnDefinition = "NUMERIC(10,2)")
+    var eccentricLoad: BigDecimal? = null,
+
+    @Column(name = "isometric_load", columnDefinition = "NUMERIC(10,2)")
+    var isometricLoad: BigDecimal? = null,
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workout_id", nullable = false)
     var workout: Workout = Workout(),

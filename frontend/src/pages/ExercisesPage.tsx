@@ -3,6 +3,7 @@ import { Pencil, Trash2, Plus, Loader2, Dumbbell } from "lucide-react";
 import { toast } from "sonner";
 import { useExercises, useDeleteExercise } from "@/hooks/useExercises";
 import type { Exercise } from "@/types";
+import { kineoTypeLabels } from "@/lib/exerciseUtils";
 import { ExerciseForm } from "@/components/exercise/ExerciseForm";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,36 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
+
+const modalityBadge = (exercise: Exercise) => {
+  switch (exercise.modality) {
+    case "KINEO":
+      return (
+        <div className="flex flex-col gap-0.5">
+          <Badge variant="secondary" className="bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-950/50 dark:text-orange-300 dark:border-orange-800">
+            Kineo
+          </Badge>
+          {exercise.kineoType && (
+            <span className="text-xs text-muted-foreground">
+              {kineoTypeLabels[exercise.kineoType] ?? exercise.kineoType}
+            </span>
+          )}
+        </div>
+      );
+    case "VALD":
+      return (
+        <Badge variant="secondary" className="bg-green-50 text-green-700 border border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800">
+          Vald
+        </Badge>
+      );
+    default:
+      return (
+        <Badge variant="secondary">
+          Livre
+        </Badge>
+      );
+  }
+};
 
 const parameterBadges: {
   key: keyof Pick<Exercise, "hasSets" | "hasReps" | "hasWeight" | "hasDistance" | "hasTime">;
@@ -104,6 +135,7 @@ export default function ExercisesPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
+              <TableHead>Modalidade</TableHead>
               <TableHead>Descrição</TableHead>
               <TableHead>Parâmetros</TableHead>
               <TableHead className="w-24 text-right">Ações</TableHead>
@@ -113,6 +145,7 @@ export default function ExercisesPage() {
             {exercises.map((ex) => (
               <TableRow key={ex.id}>
                 <TableCell className="font-medium">{ex.name}</TableCell>
+                <TableCell>{modalityBadge(ex)}</TableCell>
                 <TableCell className="max-w-xs truncate">
                   {ex.description ?? "—"}
                 </TableCell>

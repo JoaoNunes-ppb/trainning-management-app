@@ -64,6 +64,9 @@ class WorkoutService(
                 weightExpected = we.weightExpected,
                 distanceExpected = we.distanceExpected,
                 timeExpected = we.timeExpected,
+                concentricLoad = we.concentricLoad,
+                eccentricLoad = we.eccentricLoad,
+                isometricLoad = we.isometricLoad,
                 exercise = ExerciseInfo(
                     id = exercise.id!!,
                     name = exercise.name,
@@ -71,7 +74,9 @@ class WorkoutService(
                     hasReps = exercise.hasReps,
                     hasWeight = exercise.hasWeight,
                     hasDistance = exercise.hasDistance,
-                    hasTime = exercise.hasTime
+                    hasTime = exercise.hasTime,
+                    modality = exercise.modality.name,
+                    kineoType = exercise.kineoType?.name
                 ),
                 result = result?.let {
                     ExerciseResultInfo(

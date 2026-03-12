@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pencil, Trash2, Loader2, CheckCircle } from "lucide-react";
 import { useUpdateExercise, useDeleteExercise } from "@/hooks/useWorkoutExercises";
 import type { WorkoutExerciseDetail } from "@/types";
+import { exerciseDisplayName } from "@/lib/exerciseUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +38,9 @@ function formatValues(
     if (ex.hasWeight && we.weightExpected != null) parts.push(`${we.weightExpected} kg`);
     if (ex.hasDistance && we.distanceExpected != null) parts.push(`${we.distanceExpected} m`);
     if (ex.hasTime && we.timeExpected != null) parts.push(`${we.timeExpected} s`);
+    if (we.concentricLoad != null) parts.push(`conc. ${we.concentricLoad} kg`);
+    if (we.eccentricLoad != null) parts.push(`exc. ${we.eccentricLoad} kg`);
+    if (we.isometricLoad != null) parts.push(`isom. ${we.isometricLoad} kg`);
   } else if (r) {
     if (ex.hasSets && r.sets != null) parts.push(`${r.sets} séries`);
     if (ex.hasReps && r.reps != null) parts.push(`${r.reps} repetições`);
@@ -64,8 +68,13 @@ export function WorkoutExerciseItem({ workoutExercise, workoutId, readOnly = fal
   const [distance, setDistance] = useState("");
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
+  const [concentricLoad, setConcentricLoad] = useState("");
+  const [eccentricLoad, setEccentricLoad] = useState("");
+  const [isometricLoad, setIsometricLoad] = useState("");
 
   const ex = workoutExercise.exercise;
+  const isKineo = ex.modality === "KINEO";
+  const kineoType = ex.kineoType;
 
   const openEdit = () => {
     setSets(workoutExercise.setsExpected?.toString() ?? "");
@@ -74,6 +83,9 @@ export function WorkoutExerciseItem({ workoutExercise, workoutId, readOnly = fal
     setDistance(workoutExercise.distanceExpected?.toString() ?? "");
     setTime(workoutExercise.timeExpected?.toString() ?? "");
     setNotes(workoutExercise.notes ?? "");
+    setConcentricLoad(workoutExercise.concentricLoad?.toString() ?? "");
+    setEccentricLoad(workoutExercise.eccentricLoad?.toString() ?? "");
+    setIsometricLoad(workoutExercise.isometricLoad?.toString() ?? "");
     setEditOpen(true);
   };
 
@@ -89,6 +101,9 @@ export function WorkoutExerciseItem({ workoutExercise, workoutId, readOnly = fal
         weightExpected: ex.hasWeight && weight ? Number(weight) : null,
         distanceExpected: ex.hasDistance && distance ? Number(distance) : null,
         timeExpected: ex.hasTime && time ? Number(time) : null,
+        concentricLoad: isKineo && kineoType !== "ISOMETRICO" && concentricLoad ? Number(concentricLoad) : null,
+        eccentricLoad: isKineo && kineoType !== "ISOMETRICO" && eccentricLoad ? Number(eccentricLoad) : null,
+        isometricLoad: isKineo && kineoType === "ISOMETRICO" && isometricLoad ? Number(isometricLoad) : null,
       },
       { onSuccess: () => setEditOpen(false) },
     );
@@ -110,7 +125,13 @@ export function WorkoutExerciseItem({ workoutExercise, workoutId, readOnly = fal
                 {workoutExercise.result && (
                   <CheckCircle className="size-4 text-green-500 shrink-0" />
                 )}
-                <p className="font-semibold">{workoutExercise.exerciseName}</p>
+                <p className="font-semibold">
+                  {exerciseDisplayName(
+                    workoutExercise.exerciseName,
+                    workoutExercise.exercise.modality,
+                    workoutExercise.exercise.kineoType,
+                  )}
+                </p>
               </div>
 
               <p className="text-xs text-muted-foreground">
@@ -221,6 +242,50 @@ export function WorkoutExerciseItem({ workoutExercise, workoutId, readOnly = fal
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
                 />
+              </div>
+            )}
+
+            {isKineo && kineoType === "ISOMETRICO" && (
+              <div className="space-y-2">
+                <Label htmlFor="edit-isometric-load">Carga Isométrica (Kg)</Label>
+                <Input
+                  id="edit-isometric-load"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={isometricLoad}
+                  onChange={(e) => setIsometricLoad(e.target.value)}
+                  placeholder="Ex: 50"
+                />
+              </div>
+            )}
+
+            {isKineo && kineoType && kineoType !== "ISOMETRICO" && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-concentric-load">Carga Concêntrica (Kg)</Label>
+                  <Input
+                    id="edit-concentric-load"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={concentricLoad}
+                    onChange={(e) => setConcentricLoad(e.target.value)}
+                    placeholder="Ex: 40"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-eccentric-load">Carga Excêntrica (Kg)</Label>
+                  <Input
+                    id="edit-eccentric-load"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={eccentricLoad}
+                    onChange={(e) => setEccentricLoad(e.target.value)}
+                    placeholder="Ex: 60"
+                  />
+                </div>
               </div>
             )}
 

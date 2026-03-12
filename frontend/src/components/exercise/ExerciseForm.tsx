@@ -1,12 +1,19 @@
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import type { Exercise } from "@/types";
+import type { Exercise, Modality } from "@/types";
 import { useCreateExercise, useUpdateExercise } from "@/hooks/useExercises";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +50,8 @@ export function ExerciseForm({
   const [description, setDescription] = useState("");
   const [flags, setFlags] = useState<ParameterFlags>(defaultFlags);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [modality, setModality] = useState<Modality>("LIVRE");
+  const [kineoType, setKineoType] = useState("");
 
   const createMutation = useCreateExercise();
   const updateMutation = useUpdateExercise();
@@ -61,10 +70,14 @@ export function ExerciseForm({
           hasDistance: exercise.hasDistance,
           hasTime: exercise.hasTime,
         });
+        setModality(exercise.modality);
+        setKineoType(exercise.kineoType ?? "");
       } else {
         setName("");
         setDescription("");
         setFlags(defaultFlags);
+        setModality("LIVRE");
+        setKineoType("");
       }
       setValidationError(null);
     }
@@ -80,12 +93,20 @@ export function ExerciseForm({
       setValidationError("Pelo menos um parâmetro deve estar ativo.");
       return;
     }
+
+    if (modality === "KINEO" && !kineoType) {
+      setValidationError("Tipo Kineo é obrigatório.");
+      return;
+    }
+
     setValidationError(null);
 
     const payload = {
       name: name.trim(),
       description: description.trim() || null,
       ...flags,
+      modality,
+      kineoType: modality === "KINEO" ? kineoType : null,
     };
 
     if (isEdit) {
@@ -133,6 +154,44 @@ export function ExerciseForm({
               placeholder="Nome do exercício"
             />
           </div>
+
+          <div className="space-y-2">
+            <Label>Modalidade *</Label>
+            <Select value={modality} onValueChange={(val) => {
+              setModality(val as Modality);
+              if (val !== "KINEO") {
+                setKineoType("");
+              }
+            }}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="LIVRE">Livre</SelectItem>
+                <SelectItem value="KINEO">Kineo</SelectItem>
+                <SelectItem value="VALD">Vald</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {modality === "KINEO" && (
+            <div className="space-y-2">
+              <Label>Tipo Kineo *</Label>
+              <Select value={kineoType} onValueChange={(val) => setKineoType(val ?? "")}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecionar tipo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ISOTONICO">Isotónico</SelectItem>
+                  <SelectItem value="ISOMETRICO">Isométrico</SelectItem>
+                  <SelectItem value="ISOCINETICO">Isocinético</SelectItem>
+                  <SelectItem value="ELASTICO">Elástico</SelectItem>
+                  <SelectItem value="VISCOSO">Viscoso</SelectItem>
+                  <SelectItem value="VLC">VLC Carga Variável</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="exercise-desc">Descrição</Label>

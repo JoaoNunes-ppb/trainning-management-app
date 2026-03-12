@@ -4,13 +4,16 @@ import jakarta.persistence.*
 import java.util.UUID
 
 @Entity
-@Table(name = "exercise")
+@Table(
+    name = "exercise",
+    uniqueConstraints = [UniqueConstraint(columnNames = ["name", "modality", "kineo_type"])]
+)
 class Exercise(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     var name: String = "",
 
     @Column(columnDefinition = "TEXT")
@@ -29,5 +32,13 @@ class Exercise(
     var hasDistance: Boolean = false,
 
     @Column(name = "has_time", nullable = false)
-    var hasTime: Boolean = false
+    var hasTime: Boolean = false,
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    var modality: Modality = Modality.LIVRE,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "kineo_type")
+    var kineoType: KineoType? = null
 )

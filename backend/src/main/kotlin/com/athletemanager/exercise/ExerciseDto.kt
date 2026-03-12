@@ -13,7 +13,9 @@ data class CreateExerciseRequest(
     val hasReps: Boolean = false,
     val hasWeight: Boolean = false,
     val hasDistance: Boolean = false,
-    val hasTime: Boolean = false
+    val hasTime: Boolean = false,
+    val modality: Modality = Modality.LIVRE,
+    val kineoType: KineoType? = null
 )
 
 data class ExerciseResponse(
@@ -24,7 +26,9 @@ data class ExerciseResponse(
     val hasReps: Boolean,
     val hasWeight: Boolean,
     val hasDistance: Boolean,
-    val hasTime: Boolean
+    val hasTime: Boolean,
+    val modality: Modality,
+    val kineoType: KineoType?
 )
 
 fun Exercise.toResponse() = ExerciseResponse(
@@ -35,5 +39,7 @@ fun Exercise.toResponse() = ExerciseResponse(
     hasReps = this.hasReps,
     hasWeight = this.hasWeight,
     hasDistance = this.hasDistance,
-    hasTime = this.hasTime
+    hasTime = this.hasTime,
+    modality = this.modality,
+    kineoType = this.kineoType
 )

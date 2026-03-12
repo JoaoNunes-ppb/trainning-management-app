@@ -83,6 +83,9 @@ data class WorkoutExerciseDetailResponse(
     val weightExpected: BigDecimal?,
     val distanceExpected: BigDecimal?,
     val timeExpected: Int?,
+    val concentricLoad: BigDecimal?,
+    val eccentricLoad: BigDecimal?,
+    val isometricLoad: BigDecimal?,
     val exercise: ExerciseInfo,
     val result: ExerciseResultInfo?
 )
@@ -94,7 +97,9 @@ data class ExerciseInfo(
     val hasReps: Boolean,
     val hasWeight: Boolean,
     val hasDistance: Boolean,
-    val hasTime: Boolean
+    val hasTime: Boolean,
+    val modality: String,
+    val kineoType: String?
 )
 
 data class ExerciseResultInfo(
