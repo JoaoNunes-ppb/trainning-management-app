@@ -1,10 +1,103 @@
 # API Contract
 
+> **Last Updated:** 2026-03-20
+
 All endpoints use JSON request/response bodies. The base path is `/api`.
 
 UUIDs are represented as strings in JSON. Dates use `YYYY-MM-DD` format.
 
+## Authentication
+
+All endpoints require a valid JWT token in the `Authorization` header, **except** `POST /api/auth/login`.
+
+```
+Authorization: Bearer <jwt-token>
+```
+
+If the token is missing, invalid, or expired, the API returns `401 Unauthorized`.
+
+See [Security](SECURITY.md) for the full authentication flow.
+
+---
+
+## 0. Auth
+
+### POST /api/auth/login
+
+Authenticate and obtain a JWT token. **No authentication required.**
+
+**Request:**
+
+```json
+{
+  "username": "admin",
+  "password": "your-password"
+}
+```
+
+**Response 200:**
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTcxMTAwMDAwMCwiZXhwIjoxNzExMDg2NDAwfQ...",
+  "username": "admin"
+}
+```
+
+**Response 401:** Invalid credentials (wrong username/password or disabled account). No response body.
+
+**Rate limit:** 5 requests per minute per IP address.
+
+**Validation:**
+- `username`: required, non-blank
+- `password`: required, non-blank
+
+---
+
+### GET /api/auth/me
+
+Get the currently authenticated user's information. **Requires authentication.**
+
+**Response 200:**
+
+```json
+{
+  "username": "admin"
+}
+```
+
+**Response 401:** Not authenticated or token is invalid/expired.
+
+---
+
+### PUT /api/auth/change-password
+
+Change the authenticated user's password. **Requires authentication.**
+
+**Request:**
+
+```json
+{
+  "oldPassword": "current-password",
+  "newPassword": "new-password-min-8-chars"
+}
+```
+
+**Response 204:** No content. Password changed successfully.
+
+**Response 400:** Old password is incorrect, or new password is shorter than 8 characters.
+
+**Response 401:** Not authenticated.
+
+**Validation:**
+- `oldPassword`: required, non-blank, must match the current password
+- `newPassword`: required, non-blank, minimum 8 characters
+
+---
+
 ## 1. Coaches
+
+> All coach endpoints require authentication.
 
 ### GET /api/coaches
 
@@ -88,6 +181,8 @@ Delete a coach and cascade to their athletes, workouts, etc.
 
 ## 2. Athletes
 
+> All athlete endpoints require authentication.
+
 ### GET /api/athletes
 
 List athletes. Supports optional filtering.
@@ -162,6 +257,8 @@ Delete an athlete and cascade to their workouts.
 ---
 
 ## 3. Exercises
+
+> All exercise endpoints require authentication.
 
 ### GET /api/exercises
 
@@ -243,6 +340,8 @@ Delete an exercise template.
 ---
 
 ## 4. Workouts
+
+> All workout endpoints require authentication.
 
 ### GET /api/workouts
 
@@ -386,6 +485,8 @@ Delete a workout and cascade to its exercises and results.
 
 ## 5. Workout Exercises
 
+> All workout exercise endpoints require authentication.
+
 Nested under a workout. Manages the exercises within a specific workout.
 
 ### POST /api/workouts/{workoutId}/exercises
@@ -474,6 +575,8 @@ The array contains all workout exercise IDs in the desired order. The backend as
 
 ## 6. Exercise Results
 
+> All exercise result endpoints require authentication.
+
 Manages actual performance results for a workout exercise.
 
 ### PUT /api/workout-exercises/{workoutExerciseId}/result
@@ -543,8 +646,11 @@ All error responses follow a consistent format:
 
 **Common HTTP status codes:**
 - `400` Bad Request: Validation errors
+- `401` Unauthorized: Missing, invalid, or expired JWT token
+- `403` Forbidden: Authenticated but not authorized (currently unused — all authenticated users have full access)
 - `404` Not Found: Resource not found
 - `409` Conflict: Business rule violation (e.g., deleting an exercise in use)
+- `429` Too Many Requests: Rate limit exceeded (see [Security — Rate Limiting](SECURITY.md#rate-limiting))
 - `500` Internal Server Error: Unexpected errors
 
 For validation errors (400), the response includes field-level details:
@@ -561,3 +667,39 @@ For validation errors (400), the response includes field-level details:
   }
 }
 ```
+## Data snapshots
+
+All endpoints require JWT authentication.
+
+### `GET /api/data/export`
+
+Downloads a versioned ZIP containing `manifest.json` and one UTF-8 CSV per
+operational entity. Response content type is `application/zip`.
+
+### `POST /api/data/validate`
+
+Accepts multipart field `file`. Validates the complete snapshot without
+changing data and returns:
+
+```json
+{
+  "formatVersion": 1,
+  "exportedAt": "2026-09-01T08:00:00Z",
+  "files": {
+    "coaches.csv": 4,
+    "athletes.csv": 20,
+    "exercises.csv": 50,
+    "workouts.csv": 200,
+    "workout_exercises.csv": 800,
+    "exercise_results.csv": 600
+  }
+}
+```
+
+Invalid packages return `400` with file/row/field details in `fieldErrors`.
+Archives over 20 MB return `413`.
+
+### `POST /api/data/import?confirm=true`
+
+Revalidates and atomically replaces all operational data. Login accounts and
+Flyway metadata are retained. Missing confirmation returns `400`.

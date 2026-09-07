@@ -7,6 +7,8 @@ import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.AccessDeniedException
+import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.validation.BindingResult
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -74,26 +76,63 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    fun `handleGeneral returns 500 with message`() {
-        val ex = RuntimeException("Something went wrong")
+    fun `handleAuthentication returns 401`() {
+        val ex = BadCredentialsException("Bad credentials")
+
+        val response = handler.handleAuthentication(ex)
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
+        assertThat(response.body!!.status).isEqualTo(401)
+        assertThat(response.body!!.error).isEqualTo("Unauthorized")
+        assertThat(response.body!!.message).isEqualTo("Not authenticated")
+    }
+
+    @Test
+    fun `handleAccessDenied returns 403`() {
+        val ex = AccessDeniedException("Access denied")
+
+        val response = handler.handleAccessDenied(ex)
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.FORBIDDEN)
+        assertThat(response.body!!.status).isEqualTo(403)
+        assertThat(response.body!!.error).isEqualTo("Forbidden")
+        assertThat(response.body!!.message).isEqualTo("Access denied")
+    }
+
+    @Test
+    fun `handleGeneral returns 500 with generic message and does not leak exception details`() {
+        val ex = RuntimeException("Sensitive internal error details")
 
         val response = handler.handleGeneral(ex)
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
         assertThat(response.body!!.status).isEqualTo(500)
         assertThat(response.body!!.error).isEqualTo("Internal Server Error")
-        assertThat(response.body!!.message).isEqualTo("Something went wrong")
+        assertThat(response.body!!.message).isEqualTo("An unexpected error occurred")
+        assertThat(response.body!!.message).doesNotContain("Sensitive")
     }
 
     @Test
-    fun `handleGeneral returns default message when exception message is null`() {
-        val ex = mockk<Exception> {
-            every { message } returns null
-        }
+    fun `handleGeneral does not leak stack trace or class names`() {
+        val ex = NullPointerException("com.athletemanager.internal.SomeClass.method")
 
         val response = handler.handleGeneral(ex)
 
-        assertThat(response.statusCode).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+        assertThat(response.body!!.message).doesNotContain("com.athletemanager")
+        assertThat(response.body!!.message).doesNotContain("NullPointerException")
+        assertThat(response.body!!.message).doesNotContain("SomeClass")
+        assertThat(response.body!!.message).isEqualTo("An unexpected error occurred")
+    }
+
+    @Test
+    fun `handleGeneral does not leak SQL error details`() {
+        val ex = RuntimeException("ERROR: relation \"app_user\" does not exist\n  Position: 15")
+
+        val response = handler.handleGeneral(ex)
+
+        assertThat(response.body!!.message).doesNotContain("SQL")
+        assertThat(response.body!!.message).doesNotContain("relation")
+        assertThat(response.body!!.message).doesNotContain("app_user")
         assertThat(response.body!!.message).isEqualTo("An unexpected error occurred")
     }
 

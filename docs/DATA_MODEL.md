@@ -1,5 +1,13 @@
 # Data Model
 
+> The schema has evolved through V10. In addition to the original diagram
+> below, athletes include email/weight/height; workouts include status and
+> scheduled time; exercises include modality/Kineo type; workout exercises and
+> results include concentric/eccentric/isometric loads; and `app_user` stores
+> authentication separately. The CSV snapshot includes the six operational
+> entities only and deliberately excludes `app_user` and Flyway metadata. See
+> [CSV Data Transfer](DATA_TRANSFER.md).
+
 ## 1. Entity Relationship Diagram
 
 ```mermaid

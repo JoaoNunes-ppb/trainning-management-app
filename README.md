@@ -1,144 +1,103 @@
 # Athlete Management App
 
-Aplicação web para gestão de atletas, treinos e exercícios num estúdio de treino.
+A web application for small coaching studios to manage coaches and athletes,
+build and schedule workouts, record results, and transfer operational data.
 
----
+## Features
 
-## Getting Started
+- Weekly training calendar and coach/athlete filters.
+- Exercise library and workout planning/results.
+- Shared JWT-authenticated administration account.
+- Validated CSV ZIP export/import for manual snapshots and transfer.
+- Railway PostgreSQL backups in production, with an AWS/S3 fallback path.
 
-### Requisitos
+The coach selector organizes data; it is not an authorization boundary. The
+shared account can manage all athletes.
 
-- [Docker](https://docs.docker.com/get-docker/) e Docker Compose (incluído no Docker Desktop)
+## Local quick start
 
-### Arrancar a aplicação
+Requirements: Git, Docker Engine/Desktop, and Docker Compose v2.
 
 ```bash
+git clone <repository-url>
+cd trainning-management-app
+cp .env.example .env
+# Replace every CHANGE_ME value in .env
+scripts/prepare-docker-ca.sh
 docker compose up -d --build
 ```
 
-O primeiro build demora alguns minutos (dependências Maven + npm). Builds seguintes usam cache do Docker.
+Open `http://localhost:3000`.
 
-Quando os containers estiverem a correr, abrir **http://localhost:3000** no browser.
+The preparation script exports the host trust store for Docker's npm build and
+keeps local or corporate certificate authorities trusted without disabling TLS.
 
-| Serviço  | URL                              |
-|----------|----------------------------------|
-| Frontend | http://localhost:3000             |
-| API      | http://localhost:3000/api/coaches |
-| Backend  | http://localhost:8080             |
+| Service | Address |
+|---|---|
+| Nginx frontend/API proxy | `http://localhost:3000` |
+| Spring Boot API | `http://localhost:8080` |
+| PostgreSQL | `localhost:5432` |
 
-### Acesso pela rede local
-
-Outros computadores na mesma rede podem aceder à app pelo IP da máquina:
-
-```
-http://<IP-DA-MAQUINA>:3000
-```
-
-### Comandos úteis
+`docker-compose.yml` builds PostgreSQL, the app, and the Nginx frontend. The S3
+backup worker is optional:
 
 ```bash
-# Ver containers a correr
+docker compose --profile backup up -d --build
+```
+
+Configure non-production S3 credentials in `.env` before enabling it.
+
+## Architecture
+
+```text
+Local:       browser -> Nginx frontend -> Spring Boot -> PostgreSQL
+Production:  Railway HTTPS -> Caddy frontend -> Spring Boot -> Railway PostgreSQL
+```
+
+Production is now Railway-first: Railway hosts PostgreSQL, builds the backend
+and frontend services from this monorepo, provides HTTPS, and keeps the database
+private. The previously implemented Lightsail/S3 Docker deployment remains as a
+lower-cost fallback if operational complexity is acceptable.
+
+## Production
+
+Start with [Railway Deployment Guide](docs/RAILWAY_DEPLOYMENT_GUIDE.md). The
+expected cost is roughly **$5-15/month**, depending on actual memory, CPU, disk,
+and network usage. Use [AWS Deployment Guide](docs/AWS_DEPLOYMENT_GUIDE.md) only
+if lowest cost is more important than simplicity.
+
+## Tests
+
+```bash
+(cd backend && mvn test)
+(cd frontend && npm ci --legacy-peer-deps && npm test && npm run build)
+```
+
+## Documentation
+
+| Guide | Purpose |
+|---|---|
+| [Deployment](docs/DEPLOYMENT_GUIDE.md) | Local and production deployment overview |
+| [Railway deployment](docs/RAILWAY_DEPLOYMENT_GUIDE.md) | Easiest production launch path |
+| [AWS deployment](docs/AWS_DEPLOYMENT_GUIDE.md) | Lower-cost Lightsail/S3 fallback |
+| [Operations](docs/OPERATIONS_GUIDE.md) | Monitoring, deployment, rollback, maintenance |
+| [Backup and recovery](docs/BACKUP_SETUP.md) | Railway backups, CSV snapshots, and AWS fallback |
+| [Infrastructure](docs/INFRASTRUCTURE.md) | Local and production topology |
+| [CSV data transfer](docs/DATA_TRANSFER.md) | Manual export/import format and safety |
+| [Security](docs/SECURITY.md) | Authentication and security controls |
+| [API contract](docs/API_CONTRACT.md) | REST API |
+| [Developer guide](docs/DEVELOPER_GUIDE.md) | Development workflow |
+
+## Troubleshooting
+
+```bash
 docker compose ps
-
-# Ver logs (todos os serviços)
-docker compose logs -f
-
-# Ver logs (um serviço)
-docker compose logs -f app
-docker compose logs -f postgres
-docker compose logs -f frontend
-
-# Parar containers (dados preservados em ./pgdata)
-docker compose down
-
-# Reconstruir após alterações de código
-docker compose up -d --build
-
-# Reset completo da base de dados
-docker compose down
-rm -rf ./pgdata
-docker compose up -d --build
+docker compose logs --tail=200 app frontend postgres
 ```
 
-### Testes
+- Port conflicts: local development uses 3000, 8080, and 5432.
+- Startup failures: confirm `.env` exists and database/app health checks pass.
+- Production failures: use the exact production command shown above and see
+  the [Operations Guide](docs/OPERATIONS_GUIDE.md).
 
-```bash
-# Backend (78 testes unitários — MockK + JUnit 5)
-cd backend && mvn test
-
-# Frontend (81 testes — Vitest + React Testing Library)
-cd frontend && npm test
-
-# Frontend com relatório de cobertura
-cd frontend && npm run test:coverage
-```
-
----
-
-## Visão Geral
-
-Aplicação web para um estúdio de treino que permite aos treinadores:
-
-- Gerir **atletas**
-- Criar uma biblioteca de **exercícios** com diferentes modalidades (Livre, Kineo, Vald)
-- Construir **treinos** compostos por exercícios com valores previstos
-- Agendar treinos para atletas em dias específicos
-- Visualizar treinos num **calendário semanal**
-- **Registar resultados** de cada exercício (séries, repetições, peso, cargas Kineo, etc.)
-- Consultar **estatísticas e progresso** por atleta com gráficos de evolução
-
-### Modalidades de Exercício
-
-- **Livre** — exercício convencional
-- **Kineo** — exercício com máquina Kineo, requer tipo (Isotónico, Isométrico, Isocinético, Elástico, Viscoso, VLC) e cargas específicas por treino
-- **Vald** — exercício com equipamento Vald
-
----
-
-## Stack Tecnológica
-
-| Camada   | Tecnologia                                          |
-|----------|-----------------------------------------------------|
-| Frontend | React, TypeScript, Vite, Tailwind CSS, shadcn/ui    |
-| Backend  | Kotlin, Spring Boot, Spring Data JPA, Flyway         |
-| Base de dados | PostgreSQL 16                                   |
-| Infra    | Docker Compose, Nginx (proxy + SPA)                  |
-
-### Arquitectura
-
-```
-Browser → Nginx (:3000) → React SPA
-                        → /api/* proxy → Spring Boot (:8080) → PostgreSQL (:5432)
-```
-
----
-
-## Estrutura do Projecto
-
-```
-├── backend/                 # Kotlin/Spring Boot API
-│   ├── src/main/kotlin/     # Código fonte
-│   ├── src/main/resources/  # application.yml + migrações Flyway
-│   └── Dockerfile
-├── frontend/                # React/TypeScript SPA
-│   ├── src/                 # Código fonte
-│   ├── nginx.conf           # Configuração Nginx (proxy + SPA fallback)
-│   └── Dockerfile
-├── docs/                    # Documentação técnica
-├── docker-compose.yml       # Orquestração dos 3 serviços
-└── pgdata/                  # Volume PostgreSQL (gitignored)
-```
-
----
-
-## Documentação
-
-| Ficheiro | Descrição |
-|----------|-----------|
-| `docs/PRD.md` | Product Requirements Document |
-| `docs/DATA_MODEL.md` | Modelo de dados e migrações SQL |
-| `docs/API_CONTRACT.md` | Contrato da API REST |
-| `docs/BACKEND_ARCHITECTURE.md` | Arquitectura do backend |
-| `docs/FRONTEND_ARCHITECTURE.md` | Arquitectura do frontend |
-| `docs/INFRASTRUCTURE.md` | Configuração Docker e infraestrutura |
-| `docs/EXERCISE_MODALITY.md` | Especificação das modalidades de exercício |
+Private project. All rights reserved.

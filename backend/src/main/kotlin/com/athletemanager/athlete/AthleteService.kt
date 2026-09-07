@@ -2,6 +2,7 @@ package com.athletemanager.athlete
 
 import com.athletemanager.coach.CoachRepository
 import com.athletemanager.common.exception.ResourceNotFoundException
+import com.athletemanager.config.AuditEventLogger
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -10,7 +11,8 @@ import java.util.UUID
 @Transactional
 class AthleteService(
     private val athleteRepository: AthleteRepository,
-    private val coachRepository: CoachRepository
+    private val coachRepository: CoachRepository,
+    private val auditEventLogger: AuditEventLogger
 ) {
 
     @Transactional(readOnly = true)
@@ -42,7 +44,9 @@ class AthleteService(
             heightCm = request.heightCm,
             coach = coach
         )
-        return athleteRepository.save(athlete).toResponse()
+        val saved = athleteRepository.save(athlete)
+        auditEventLogger.logEvent("CREATE", "Athlete", saved.id, "name=${saved.name}")
+        return saved.toResponse()
     }
 
     fun update(id: UUID, request: CreateAthleteRequest): AthleteResponse {
@@ -57,7 +61,9 @@ class AthleteService(
         athlete.weightKg = request.weightKg
         athlete.heightCm = request.heightCm
         athlete.coach = coach
-        return athleteRepository.save(athlete).toResponse()
+        val saved = athleteRepository.save(athlete)
+        auditEventLogger.logEvent("UPDATE", "Athlete", saved.id, "name=${saved.name}")
+        return saved.toResponse()
     }
 
     fun delete(id: UUID) {
@@ -65,5 +71,6 @@ class AthleteService(
             throw ResourceNotFoundException("Athlete not found with id: $id")
         }
         athleteRepository.deleteById(id)
+        auditEventLogger.logEvent("DELETE", "Athlete", id)
     }
 }

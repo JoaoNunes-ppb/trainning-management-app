@@ -4,7 +4,7 @@ import com.athletemanager.athlete.Athlete
 import com.athletemanager.athlete.AthleteRepository
 import com.athletemanager.coach.Coach
 import com.athletemanager.common.exception.BusinessRuleException
-import com.athletemanager.common.exception.ResourceNotFoundException
+import com.athletemanager.common.exception.ResourceNotFoundException import com.athletemanager.config.AuditEventLogger
 import com.athletemanager.exercise.Exercise
 import com.athletemanager.exercise.Modality
 import com.athletemanager.exerciseresult.ExerciseResult
@@ -38,6 +38,9 @@ class WorkoutServiceTest {
 
     @MockK
     private lateinit var exerciseResultRepository: ExerciseResultRepository
+
+    @MockK(relaxed = true)
+    private lateinit var auditEventLogger: AuditEventLogger
 
     @InjectMockKs
     private lateinit var service: WorkoutService

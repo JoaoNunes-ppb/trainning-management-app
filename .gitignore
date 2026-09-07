@@ -25,14 +25,20 @@ frontend/.env.production
 
 # === Docker ===
 pgdata/
+.docker/
 
 # === Environment / Secrets ===
 .env
 .env.*
 !.env.example
+!.env.production.example
 
 # === Logs ===
 *.log
+logs/
+
+# === Backups ===
+backups/
 
 # === Misc ===
 *.png

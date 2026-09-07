@@ -216,18 +216,11 @@ interface CoachContextValue {
 
 The active coach is persisted to `localStorage` so it survives page refreshes. On first load, if no coach is saved, the app prompts the user to select one.
 
-## 6. Ownership Helper
+## 6. Cross-coach access
 
-A utility function determines whether the active coach "owns" a resource:
-
-```typescript
-// lib/ownership.ts
-export function isOwnedByActiveCoach(coachId: string, activeCoachId: string | undefined): boolean {
-  return !!activeCoachId && coachId === activeCoachId;
-}
-```
-
-This is used throughout the app to decide whether to show edit/delete buttons, allow calendar interactions, etc.
+`CoachContext` supplies filtering context only. There is no frontend ownership
+helper: every authenticated user can manage workouts, workout exercises, and
+results for every athlete. Athlete assignment remains visible for organization.
 
 ## 7. Key Component Behaviors
 
@@ -260,29 +253,18 @@ This is used throughout the app to decide whether to show edit/delete buttons, a
 
 - Displays: workout label, athlete name, exercise count badge.
 - Shows a small indicator if results have been logged (e.g., checkmark icon).
-- **Ownership visual cue**: If the workout's coachId does NOT match the active coach, the card is rendered with reduced opacity (e.g., `opacity-60`) and a subtle dashed border.
+- Cards have the same interaction and styling regardless of assigned coach.
 - Clicking always navigates to `/workouts/:id`.
 
 ### 7.5 DayColumn
 
-- Clicking empty space to create a workout is ONLY enabled when:
-  - View mode is "myAthletes", OR
-  - View mode is "byAthlete" AND the selected athlete belongs to the active coach.
-- In "all" mode, the "+" click area is hidden.
+- Empty-space creation is available in all modes; “Por Atleta” requires an athlete selection.
 
 ### 7.6 WorkoutDetailPage
 
 - Fetches full workout detail via `GET /api/workouts/:id`.
-- Computes `isOwner = isOwnedByActiveCoach(workout.coachId, activeCoach.id)`.
-- **If isOwner is true**: full edit mode -- shows all edit/delete buttons, add exercise, log results.
-- **If isOwner is false**: read-only mode:
-  - A banner at the top: "Treino de atleta de outro treinador (apenas leitura)"
-  - WorkoutHeader hides Edit and Delete buttons.
-  - WorkoutExerciseList hides "Adicionar Exercício" button.
-  - WorkoutExerciseItem hides edit and delete buttons.
-  - ResultLogger is not shown (no log/edit/clear).
-  - All data is still visible (exercise names, expected values, actual results).
-- Shows workout header (label, date, athlete, notes) with edit capability (if owner).
+- Always exposes full workout, exercise, status, result, copy, and delete controls.
+- Shows workout header (label, date, athlete, notes) with edit capability.
 - Lists exercises in order, each showing:
   - Exercise name
   - Expected values (only the enabled parameter fields)
@@ -292,9 +274,8 @@ This is used throughout the app to decide whether to show edit/delete buttons, a
 
 ### 7.7 WorkoutForm (Create)
 
-- The athlete dropdown ONLY shows athletes belonging to the active coach.
-- The coachId is not selectable -- it is always the active coach.
-- This ensures coaches can only create workouts for their own athletes.
+- The athlete dropdown shows every athlete and labels each with the assigned coach.
+- Creating or editing a workout does not change the athlete's coach assignment.
 
 ### 7.8 ExerciseForm
 
@@ -373,8 +354,6 @@ All user-facing text in the frontend MUST be written in **Portuguese (Portugal)*
 | My Athletes | Os Meus Atletas |
 | All Athletes | Todos os Atletas |
 | By Athlete | Por Atleta |
-| Read-only (other coach's athlete) | Treino de atleta de outro treinador (apenas leitura) |
-| Other coach's training | Treino de outro treinador |
 | Name | Nome |
 | Date of Birth | Data de Nascimento |
 | Notes | Notas |

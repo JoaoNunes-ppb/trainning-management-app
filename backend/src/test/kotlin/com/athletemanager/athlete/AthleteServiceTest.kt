@@ -3,6 +3,7 @@ package com.athletemanager.athlete
 import com.athletemanager.coach.Coach
 import com.athletemanager.coach.CoachRepository
 import com.athletemanager.common.exception.ResourceNotFoundException
+import com.athletemanager.config.AuditEventLogger
 import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
@@ -23,6 +24,9 @@ class AthleteServiceTest {
 
     @MockK
     private lateinit var coachRepository: CoachRepository
+
+    @MockK(relaxed = true)
+    private lateinit var auditEventLogger: AuditEventLogger
 
     @InjectMockKs
     private lateinit var service: AthleteService

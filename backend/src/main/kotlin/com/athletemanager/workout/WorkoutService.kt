@@ -3,6 +3,7 @@ package com.athletemanager.workout
 import com.athletemanager.athlete.AthleteRepository
 import com.athletemanager.common.exception.BusinessRuleException
 import com.athletemanager.common.exception.ResourceNotFoundException
+import com.athletemanager.config.AuditEventLogger
 import com.athletemanager.exerciseresult.ExerciseResultRepository
 import com.athletemanager.workoutexercise.WorkoutExerciseRepository
 import org.springframework.stereotype.Service
@@ -16,7 +17,8 @@ class WorkoutService(
     private val workoutRepository: WorkoutRepository,
     private val athleteRepository: AthleteRepository,
     private val workoutExerciseRepository: WorkoutExerciseRepository,
-    private val exerciseResultRepository: ExerciseResultRepository
+    private val exerciseResultRepository: ExerciseResultRepository,
+    private val auditEventLogger: AuditEventLogger
 ) {
 
     @Transactional(readOnly = true)
@@ -128,7 +130,9 @@ class WorkoutService(
             scheduledTime = request.scheduledTime,
             athlete = athlete
         )
-        return workoutRepository.save(workout).toSummaryResponse()
+        val saved = workoutRepository.save(workout)
+        auditEventLogger.logEvent("CREATE", "Workout", saved.id, "label=${saved.label}")
+        return saved.toSummaryResponse()
     }
 
     fun update(id: UUID, request: CreateWorkoutRequest): WorkoutSummaryResponse {
@@ -142,6 +146,7 @@ class WorkoutService(
         workout.scheduledTime = request.scheduledTime
         workout.athlete = athlete
         val saved = workoutRepository.save(workout)
+        auditEventLogger.logEvent("UPDATE", "Workout", saved.id, "label=${saved.label}")
         val exercises = workoutExerciseRepository.findByWorkoutIdOrderByOrderIndex(saved.id!!)
         val hasResults = exercises.any { exerciseResultRepository.findByWorkoutExerciseId(it.id!!) != null }
         return saved.toSummaryResponse(exerciseCount = exercises.size, hasResults = hasResults)
@@ -166,6 +171,7 @@ class WorkoutService(
             throw ResourceNotFoundException("Workout not found with id: $id")
         }
         workoutRepository.deleteById(id)
+        auditEventLogger.logEvent("DELETE", "Workout", id)
     }
 
     fun copyWorkout(sourceWorkoutId: UUID, request: CopyWorkoutRequest): WorkoutDetailResponse {

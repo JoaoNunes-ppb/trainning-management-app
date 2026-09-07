@@ -1,15 +1,5 @@
 package com.athletemanager.config
 
-import org.springframework.context.annotation.Configuration
-import org.springframework.web.servlet.config.annotation.CorsRegistry
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
-
-@Configuration
-class CorsConfig : WebMvcConfigurer {
-    override fun addCorsMappings(registry: CorsRegistry) {
-        registry.addMapping("/api/**")
-            .allowedOrigins("http://localhost:5173", "http://localhost:3000")
-            .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-            .allowedHeaders("*")
-    }
-}
+// CORS is now handled by SecurityConfig via Spring Security's CorsConfigurationSource.
+// This file is kept intentionally empty to avoid conflicting CORS configurations.
+// See SecurityConfig.kt for the active CORS setup.
