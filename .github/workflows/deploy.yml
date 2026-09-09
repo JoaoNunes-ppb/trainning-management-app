@@ -1,0 +1,141 @@
+name: Deploy production
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/joaonunes-ppb/trainning-management-app
+  DEPLOY_DIR: trainning-management-app
+
+jobs:
+  build-images:
+    name: Build production images
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out successful revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-app:${{ github.event.workflow_run.head_sha }}
+          build-args: VCS_REF=${{ github.event.workflow_run.head_sha }}
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: frontend/Dockerfile.prod
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-web:${{ github.event.workflow_run.head_sha }}
+          build-args: VCS_REF=${{ github.event.workflow_run.head_sha }}
+
+      - name: Build and push backup
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.backup
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-backup:${{ github.event.workflow_run.head_sha }}
+          build-args: VCS_REF=${{ github.event.workflow_run.head_sha }}
+
+  deploy:
+    name: Deploy to production
+    needs: build-images
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check out successful revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Configure SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d .deploy-ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > .deploy-ssh/id_ed25519
+          chmod 600 .deploy-ssh/id_ed25519
+          ssh-keyscan -H "$DEPLOY_HOST" > .deploy-ssh/known_hosts
+
+      - name: Copy deployment files
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          SSH_ARGS=(-i .deploy-ssh/id_ed25519 -o UserKnownHostsFile=.deploy-ssh/known_hosts)
+          ssh "${SSH_ARGS[@]}" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "mkdir -p ~/$DEPLOY_DIR/deploy/scripts"
+          scp "${SSH_ARGS[@]}" docker-compose.prod.yml .env.production.example \
+            "$DEPLOY_USER@$DEPLOY_HOST:~/$DEPLOY_DIR/"
+          scp "${SSH_ARGS[@]}" deploy/scripts/*.sh \
+            "$DEPLOY_USER@$DEPLOY_HOST:~/$DEPLOY_DIR/deploy/scripts/"
+
+      - name: Authenticate server to GHCR
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$GHCR_TOKEN" | ssh \
+            -i .deploy-ssh/id_ed25519 \
+            -o UserKnownHostsFile=.deploy-ssh/known_hosts \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "docker login ghcr.io --username '${{ github.actor }}' --password-stdin"
+
+      - name: Deploy revision
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          ssh \
+            -i .deploy-ssh/id_ed25519 \
+            -o UserKnownHostsFile=.deploy-ssh/known_hosts \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "cd ~/$DEPLOY_DIR && chmod +x deploy/scripts/*.sh && deploy/scripts/remote-deploy.sh '$IMAGE_TAG'"
+
+      - name: Remove SSH material
+        if: always()
+        run: rm -rf .deploy-ssh

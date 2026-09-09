@@ -1,0 +1,133 @@
+name: athlete-manager
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    env_file: .env.production
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=64MB
+      - -c
+      - work_mem=2MB
+      - -c
+      - max_connections=30
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    mem_limit: 192m
+    cpus: 0.5
+    logging: &bounded-logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks: [private]
+
+  app:
+    image: ghcr.io/joaonunes-ppb/trainning-management-app-app:${IMAGE_TAG}
+    env_file: .env.production
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: postgres
+      DB_PORT: 5432
+      LOGGING_FILE_PATH: /app/logs
+      JAVA_TOOL_OPTIONS: >-
+        -XX:MaxRAMPercentage=70
+        -XX:InitialRAMPercentage=25
+        -XX:+ExitOnOutOfMemoryError
+    volumes:
+      - app_logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 25s
+    restart: unless-stopped
+    stop_grace_period: 30s
+    mem_limit: 448m
+    cpus: 0.75
+    logging: *bounded-logging
+    networks: [private]
+
+  web:
+    image: ghcr.io/joaonunes-ppb/trainning-management-app-web:${IMAGE_TAG}
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8081/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    mem_limit: 96m
+    cpus: 0.25
+    logging: *bounded-logging
+    networks:
+      - private
+      - public
+
+  backup:
+    image: ghcr.io/joaonunes-ppb/trainning-management-app-backup:${IMAGE_TAG}
+    env_file: .env.production
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      TZ: Europe/Lisbon
+    volumes:
+      - local_backups:/backups
+      - backup_status:/status
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >-
+        echo '0 0 * * * /usr/local/bin/backup.sh >> /proc/1/fd/1 2>> /proc/1/fd/2'
+        | crontab - && crond -f -l 2
+    healthcheck:
+      test: ["CMD-SHELL", "test ! -f /status/last_failure"]
+      interval: 30s
+      timeout: 3s
+      retries: 1
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.25
+    logging: *bounded-logging
+    networks: [private, public]
+
+volumes:
+  postgres_data:
+  app_logs:
+  caddy_data:
+  caddy_config:
+  local_backups:
+  backup_status:
+
+networks:
+  private:
+  public:

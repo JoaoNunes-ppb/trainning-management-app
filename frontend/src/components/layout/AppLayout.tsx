@@ -1,8 +1,22 @@
 import { useMemo, useState, useCallback } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Calendar, Users, Dumbbell, Shield, Menu, X, Settings, BarChart3 } from "lucide-react";
+import {
+  Calendar,
+  Users,
+  Dumbbell,
+  Shield,
+  Menu,
+  X,
+  Settings,
+  BarChart3,
+  User,
+  LogOut,
+  KeyRound,
+  DatabaseBackup,
+} from "lucide-react";
 import { useCoaches } from "@/hooks/useCoaches";
 import { useCoachContext } from "@/context/CoachContext";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -11,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import ChangePasswordDialog from "@/components/ChangePasswordDialog";
 
 const navItems = [
   { to: "/", label: "Calendário", icon: Calendar },
@@ -18,6 +33,7 @@ const navItems = [
   { to: "/athletes", label: "Atletas", icon: Users },
   { to: "/estatisticas", label: "Estatísticas", icon: BarChart3 },
   { to: "/exercises", label: "Exercícios", icon: Dumbbell },
+  { to: "/dados", label: "Dados e Cópias", icon: DatabaseBackup },
 ];
 
 function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
@@ -55,8 +71,11 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
 export default function AppLayout() {
   const { data: coaches, isLoading: coachesLoading } = useCoaches();
   const { activeCoach, setActiveCoach } = useCoachContext();
+  const { username, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
 
   const closeMobile = useCallback(() => setMobileOpen(false), []);
 
@@ -121,46 +140,99 @@ export default function AppLayout() {
             </Button>
             <h1 className="text-lg font-semibold md:hidden">Gestão de Atletas</h1>
           </div>
-          <div className="hidden md:block" />
 
-          <Select
-            value={activeCoach?.id ?? null}
-            onValueChange={(val) => {
-              const coach = coaches?.find((c) => c.id === val);
-              if (coach) setActiveCoach(coach);
-            }}
-            items={coachItems}
-          >
-            <SelectTrigger className="w-48" disabled={coachesLoading}>
-              <SelectValue placeholder="Selecionar treinador..." />
-            </SelectTrigger>
-            <SelectContent>
-              {coaches?.map((coach) => (
-                <SelectItem key={coach.id} value={coach.id}>
-                  {coach.name}
-                </SelectItem>
-              ))}
-              <div className="border-t border-border mt-1 pt-1">
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    navigate("/coaches");
-                  }}
+          <div className="flex items-center gap-3">
+            <Select
+              value={activeCoach?.id ?? null}
+              onValueChange={(val) => {
+                const coach = coaches?.find((c) => c.id === val);
+                if (coach) setActiveCoach(coach);
+              }}
+              items={coachItems}
+            >
+              <SelectTrigger className="w-48" disabled={coachesLoading}>
+                <SelectValue placeholder="Selecionar treinador..." />
+              </SelectTrigger>
+              <SelectContent>
+                {coaches?.map((coach) => (
+                  <SelectItem key={coach.id} value={coach.id}>
+                    {coach.name}
+                  </SelectItem>
+                ))}
+                <div className="border-t border-border mt-1 pt-1">
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      navigate("/coaches");
+                    }}
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                    Gerir Treinadores
+                  </button>
+                </div>
+              </SelectContent>
+            </Select>
+
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => setAccountOpen((open) => !open)}
+                aria-expanded={accountOpen}
+                aria-haspopup="menu"
+              >
+                <User className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{username}</span>
+              </Button>
+              {accountOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-50 mt-2 min-w-48 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
                 >
-                  <Settings className="h-3.5 w-3.5" />
-                  Gerir Treinadores
-                </button>
-              </div>
-            </SelectContent>
-          </Select>
+                  <p className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                    {username}
+                  </p>
+                  <div className="my-1 h-px bg-border" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                    onClick={() => {
+                      setAccountOpen(false);
+                      setChangePasswordOpen(true);
+                    }}
+                  >
+                    <KeyRound className="h-4 w-4" />
+                    Alterar Palavra-passe
+                  </button>
+                  <div className="my-1 h-px bg-border" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-destructive hover:bg-destructive/10"
+                    onClick={logout}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Terminar Sessão
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </header>
 
         <main className="flex-1 overflow-auto p-6">
           <Outlet />
         </main>
       </div>
+
+      <ChangePasswordDialog
+        open={changePasswordOpen}
+        onOpenChange={setChangePasswordOpen}
+      />
     </div>
   );
 }

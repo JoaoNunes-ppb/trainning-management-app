@@ -1,0 +1,18 @@
+FROM alpine:3.20
+ARG VCS_REF=development
+
+RUN apk add --no-cache \
+    aws-cli \
+    bash \
+    gzip \
+    postgresql16-client \
+    tzdata
+
+COPY scripts/backup.sh /usr/local/bin/backup.sh
+COPY scripts/restore.sh /usr/local/bin/restore.sh
+RUN chmod 0755 /usr/local/bin/backup.sh /usr/local/bin/restore.sh \
+    && mkdir -p /backups /status
+
+LABEL org.opencontainers.image.source="https://github.com/JoaoNunes-ppb/trainning-management-app" \
+      org.opencontainers.image.revision="${VCS_REF}"
+VOLUME ["/backups", "/status"]

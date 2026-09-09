@@ -4,9 +4,7 @@ import { Plus } from "lucide-react";
 import { useCoachContext } from "@/context/CoachContext";
 import { useCalendarWorkouts } from "@/hooks/useCalendar";
 import { useCopyWorkout } from "@/hooks/useWorkouts";
-import { useAthletes } from "@/hooks/useAthletes";
 import { getWeekStart, getWeekEnd, formatDateParam } from "@/lib/dateUtils";
-import { isOwner } from "@/lib/ownership";
 import { Button } from "@/components/ui/button";
 import { WorkoutForm } from "@/components/workout/WorkoutForm";
 import CalendarHeader from "./CalendarHeader";
@@ -59,19 +57,7 @@ export default function WeeklyCalendar({
     filterAthleteId,
   );
 
-  const { data: allAthletes } = useAthletes();
-
-  const selectedAthleteBelongsToCoach = useMemo(() => {
-    if (!selectedAthleteId || !activeCoach) return false;
-    const athlete = allAthletes?.find((a) => a.id === selectedAthleteId);
-    return athlete ? isOwner(athlete.coachId, activeCoach.id) : false;
-  }, [selectedAthleteId, activeCoach, allAthletes]);
-
-  const canCreate = useMemo(() => {
-    if (viewMode === "myAthletes") return true;
-    if (viewMode === "byAthlete" && selectedAthleteBelongsToCoach) return true;
-    return false;
-  }, [viewMode, selectedAthleteBelongsToCoach]);
+  const canCreate = viewMode !== "byAthlete" || !!selectedAthleteId;
 
   const days = useMemo(
     () => eachDayOfInterval({ start: currentWeekStart, end: weekEnd }),
@@ -167,7 +153,6 @@ export default function WeeklyCalendar({
               workouts={workoutsByDay.get(day.toISOString()) ?? []}
               onDayClick={handleDayClick}
               canCreate={canCreate}
-              activeCoachId={activeCoach?.id}
               onDropWorkout={handleDropWorkout}
             />
           ))}

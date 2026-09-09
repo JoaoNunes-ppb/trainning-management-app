@@ -4,9 +4,7 @@ import { pt } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useCoachContext } from "@/context/CoachContext";
 import { useCalendarWorkouts } from "@/hooks/useCalendar";
-import { useAthletes } from "@/hooks/useAthletes";
 import { formatDateParam } from "@/lib/dateUtils";
-import { isOwner as checkOwner } from "@/lib/ownership";
 import { Button } from "@/components/ui/button";
 import { WorkoutForm } from "@/components/workout/WorkoutForm";
 import CalendarFilterBar from "./CalendarFilterBar";
@@ -54,19 +52,7 @@ export default function DailyCalendar({
     filterAthleteId,
   );
 
-  const { data: allAthletes } = useAthletes();
-
-  const selectedAthleteBelongsToCoach = useMemo(() => {
-    if (!selectedAthleteId || !activeCoach) return false;
-    const athlete = allAthletes?.find((a) => a.id === selectedAthleteId);
-    return athlete ? checkOwner(athlete.coachId, activeCoach.id) : false;
-  }, [selectedAthleteId, activeCoach, allAthletes]);
-
-  const canCreate = useMemo(() => {
-    if (viewMode === "myAthletes") return true;
-    if (viewMode === "byAthlete" && selectedAthleteBelongsToCoach) return true;
-    return false;
-  }, [viewMode, selectedAthleteBelongsToCoach]);
+  const canCreate = viewMode !== "byAthlete" || !!selectedAthleteId;
 
   const { unscheduled, byHour } = useMemo(() => {
     const unsched: WorkoutSummary[] = [];
@@ -168,11 +154,7 @@ export default function DailyCalendar({
               {unscheduled.length > 0 ? (
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                   {unscheduled.map((w) => (
-                    <WorkoutCard
-                      key={w.id}
-                      workout={w}
-                      isOwner={checkOwner(w.coachId, activeCoach?.id)}
-                    />
+                    <WorkoutCard key={w.id} workout={w} />
                   ))}
                 </div>
               ) : (
@@ -209,10 +191,7 @@ export default function DailyCalendar({
                     <div className="flex flex-1 flex-wrap gap-2 p-2">
                       {hourWorkouts.map((w) => (
                         <div key={w.id} className="w-full max-w-xs">
-                          <WorkoutCard
-                            workout={w}
-                            isOwner={checkOwner(w.coachId, activeCoach?.id)}
-                          />
+                          <WorkoutCard workout={w} />
                         </div>
                       ))}
                       {canCreate && hourWorkouts.length === 0 && (

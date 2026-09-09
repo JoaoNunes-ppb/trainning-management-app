@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import { pt } from "date-fns/locale";
-import { ArrowLeft, Pencil, Trash2, Loader2, Info, Copy } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Loader2, Copy } from "lucide-react";
 import { useUpdateWorkout, useDeleteWorkout, useUpdateWorkoutStatus } from "@/hooks/useWorkouts";
 import { useAthletes } from "@/hooks/useAthletes";
 import type { WorkoutDetail, WorkoutStatus } from "@/types";
@@ -45,17 +45,12 @@ function formatTime(time: string | null) {
   return time.slice(0, 5);
 }
 
-interface WorkoutHeaderProps {
-  workout: WorkoutDetail;
-  readOnly?: boolean;
-}
-
-export function WorkoutHeader({ workout, readOnly = false }: WorkoutHeaderProps) {
+export function WorkoutHeader({ workout }: { workout: WorkoutDetail }) {
   const navigate = useNavigate();
   const updateMutation = useUpdateWorkout();
   const deleteMutation = useDeleteWorkout();
   const statusMutation = useUpdateWorkoutStatus();
-  const { data: athletes } = useAthletes(workout.coachId);
+  const { data: athletes } = useAthletes();
 
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -115,13 +110,6 @@ export function WorkoutHeader({ workout, readOnly = false }: WorkoutHeaderProps)
           </Button>
         </div>
 
-        {readOnly && (
-          <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
-            <Info className="h-4 w-4 shrink-0" />
-            Treino de atleta de outro treinador (apenas leitura)
-          </div>
-        )}
-
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
@@ -149,8 +137,7 @@ export function WorkoutHeader({ workout, readOnly = false }: WorkoutHeaderProps)
             )}
           </div>
 
-          {!readOnly && (
-            <div className="flex flex-col items-end gap-2 shrink-0">
+          <div className="flex flex-col items-end gap-2 shrink-0">
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setCopyOpen(true)}>
                   <Copy className="size-3.5" data-icon="inline-start" />
@@ -179,8 +166,7 @@ export function WorkoutHeader({ workout, readOnly = false }: WorkoutHeaderProps)
                   </Button>
                 ))}
               </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -202,7 +188,7 @@ export function WorkoutHeader({ workout, readOnly = false }: WorkoutHeaderProps)
                 <SelectContent>
                   {athletes?.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
-                      {a.name}
+                      {a.name} — {a.coachName}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -1,0 +1,30 @@
+:{$PORT:8080} {
+	encode zstd gzip
+
+	handle /health {
+		respond "ok" 200
+	}
+
+	handle /health/backend {
+		rewrite * /actuator/health
+		reverse_proxy {$API_INTERNAL_URL}
+	}
+
+	handle /api/* {
+		reverse_proxy {$API_INTERNAL_URL}
+	}
+
+	handle {
+		root * /srv/frontend
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		-Server
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+	}
+}

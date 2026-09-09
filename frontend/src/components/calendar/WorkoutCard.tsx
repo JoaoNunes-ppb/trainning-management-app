@@ -19,7 +19,6 @@ const statusLeftBorder: Record<string, string> = {
 
 interface WorkoutCardProps {
   workout: WorkoutSummary;
-  isOwner?: boolean;
 }
 
 function formatTime(time: string | null) {
@@ -27,7 +26,7 @@ function formatTime(time: string | null) {
   return time.slice(0, 5);
 }
 
-export default function WorkoutCard({ workout, isOwner = true }: WorkoutCardProps) {
+export default function WorkoutCard({ workout }: WorkoutCardProps) {
   const navigate = useNavigate();
   const [isDragging, setIsDragging] = useState(false);
 
@@ -48,9 +47,8 @@ export default function WorkoutCard({ workout, isOwner = true }: WorkoutCardProp
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      className={`cursor-pointer transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 ${statusStyles[workout.status] ?? ""} ${statusLeftBorder[workout.status] ?? ""} ${!isOwner ? "opacity-50 border-dashed" : ""} ${isDragging ? "opacity-40" : ""}`}
+      className={`cursor-pointer transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 ${statusStyles[workout.status] ?? ""} ${statusLeftBorder[workout.status] ?? ""} ${isDragging ? "opacity-40" : ""}`}
       onClick={() => navigate(`/workouts/${workout.id}`)}
-      title={!isOwner ? "Treino de outro treinador" : undefined}
     >
       <CardContent className="space-y-1 p-2">
         <div className="flex items-start justify-between gap-1">

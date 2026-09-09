@@ -1,6 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Loader2 } from "lucide-react";
-import { useCoachContext } from "@/context/CoachContext";
 import { useAthletes } from "@/hooks/useAthletes";
 import { useCreateWorkout } from "@/hooks/useWorkouts";
 import { Button } from "@/components/ui/button";
@@ -36,13 +35,30 @@ export function WorkoutForm({
   defaultDate,
   onSuccess,
 }: WorkoutFormProps) {
-  const { activeCoach } = useCoachContext();
-  const { data: athletes } = useAthletes(activeCoach?.id);
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open && (
+        <WorkoutFormContent
+          defaultDate={defaultDate}
+          onOpenChange={onOpenChange}
+          onSuccess={onSuccess}
+        />
+      )}
+    </Dialog>
+  );
+}
+
+function WorkoutFormContent({
+  onOpenChange,
+  defaultDate,
+  onSuccess,
+}: Omit<WorkoutFormProps, "open">) {
+  const { data: athletes } = useAthletes();
   const createMutation = useCreateWorkout();
 
   const [athleteId, setAthleteId] = useState<string | null>(null);
   const [label, setLabel] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(defaultDate ?? "");
   const [scheduledTime, setScheduledTime] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -54,16 +70,6 @@ export function WorkoutForm({
       ) ?? {},
     [athletes],
   );
-
-  useEffect(() => {
-    if (open) {
-      setAthleteId(null);
-      setLabel("");
-      setDate(defaultDate ?? "");
-      setScheduledTime("");
-      setNotes("");
-    }
-  }, [open, defaultDate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,28 +93,12 @@ export function WorkoutForm({
     );
   };
 
-  if (!activeCoach) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Novo Treino</DialogTitle>
-          </DialogHeader>
-          <p className="py-4 text-sm text-muted-foreground">
-            Selecione primeiro um treinador no menu superior.
-          </p>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Novo Treino</DialogTitle>
           <DialogDescription>
-            Criar um treino para um dos seus atletas.
+            Criar um treino para qualquer atleta.
           </DialogDescription>
         </DialogHeader>
 
@@ -128,7 +118,7 @@ export function WorkoutForm({
               <SelectContent>
                 {athletes?.map((a) => (
                   <SelectItem key={a.id} value={a.id}>
-                    {a.name}
+                    {a.name} — {a.coachName}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -189,7 +179,6 @@ export function WorkoutForm({
             </Button>
           </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+    </DialogContent>
   );
 }

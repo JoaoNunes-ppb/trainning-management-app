@@ -3,7 +3,6 @@ import { format, isToday } from "date-fns";
 import { pt } from "date-fns/locale";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { isOwner } from "@/lib/ownership";
 import { formatDateParam } from "@/lib/dateUtils";
 import WorkoutCard from "./WorkoutCard";
 import type { WorkoutSummary } from "@/types";
@@ -13,7 +12,6 @@ interface DayColumnProps {
   workouts: WorkoutSummary[];
   onDayClick: (date: Date) => void;
   canCreate: boolean;
-  activeCoachId?: string;
   onDropWorkout?: (workoutId: string, targetDate: string) => void;
 }
 
@@ -22,7 +20,6 @@ export default function DayColumn({
   workouts,
   onDayClick,
   canCreate,
-  activeCoachId,
   onDropWorkout,
 }: DayColumnProps) {
   const today = isToday(date);
@@ -103,11 +100,7 @@ export default function DayColumn({
         }}
       >
         {sorted.map((w) => (
-          <WorkoutCard
-            key={w.id}
-            workout={w}
-            isOwner={isOwner(w.coachId, activeCoachId)}
-          />
+          <WorkoutCard key={w.id} workout={w} />
         ))}
 
         {canCreate && sorted.length === 0 && (
