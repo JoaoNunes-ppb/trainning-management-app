@@ -56,7 +56,7 @@ sequenceDiagram
 |-------------------|------------------------------------------|
 | Algorithm         | HMAC-SHA256                              |
 | Signing key       | `JWT_SECRET` environment variable (min 32 chars) |
-| Expiration        | 24 hours (configurable via `JWT_EXPIRATION`) |
+| Expiration        | 30 days in production (configurable via `JWT_EXPIRATION`) |
 | Storage (client)  | `localStorage` in the browser            |
 | Refresh mechanism | None — user must log in again after expiry |
 
@@ -299,16 +299,10 @@ All secrets are stored in the `.env` file at the project root. This file is **gi
 | `DB_USER`               | Database user (backend connection)   | `athlete`                        |
 | `DB_PASS`               | Database password (backend)          | Must match `POSTGRES_PASSWORD`   |
 | `JWT_SECRET`            | JWT signing key                      | Min 32 chars, `openssl rand -base64 48` |
-| `JWT_EXPIRATION`        | Token TTL in milliseconds            | `86400000` (24 hours)            |
+| `JWT_EXPIRATION`        | Token TTL in milliseconds            | `2592000000` (30 days, prod default) |
 | `ADMIN_USERNAME`        | Shared login username                | `admin`                          |
 | `ADMIN_PASSWORD`        | Shared login password                | Strong password                  |
 | `CORS_ALLOWED_ORIGINS`  | Allowed frontend origins (comma-separated) | `https://yourdomain.com`   |
-| `AWS_REGION`            | S3 bucket region                      | `eu-west-1`                      |
-| `AWS_ACCESS_KEY_ID`     | Restricted backup IAM access key     | Stored only on production host   |
-| `AWS_SECRET_ACCESS_KEY` | Restricted backup IAM secret key     | Stored only on production host   |
-| `S3_BUCKET`             | Private SQL backup bucket            | Account-specific bucket name     |
-| `S3_PREFIX`             | Backup object prefix                 | `backups/athlete-manager`        |
-| `LOCAL_BACKUP_RETENTION_DAYS` | Local dump retention         | `3`                              |
 
 ### Best Practices
 
@@ -316,7 +310,6 @@ All secrets are stored in the `.env` file at the project root. This file is **gi
 - Use `openssl rand -base64 48` to generate `JWT_SECRET`
 - Use `openssl rand -base64 24` to generate database passwords
 - Keep a secure backup of the `.env` file (e.g., in a password manager)
-- Restrict the backup IAM key to the configured private S3 bucket and prefix
 - `POSTGRES_PASSWORD` and `DB_PASS` must always match
 - Change default credentials (`admin`/`admin`) before any real use
 

@@ -66,38 +66,6 @@ services:
       timeout: 3s
       retries: 5
 
-  backup:
-    profiles: ["backup"]
-    build:
-      context: .
-      dockerfile: Dockerfile.backup
-    container_name: athlete-backup
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-athletedb}
-      DB_USER: ${DB_USER:-athlete}
-      DB_PASS: ${DB_PASS:-athlete}
-      AWS_REGION: ${AWS_REGION:-eu-west-1}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      S3_BUCKET: ${S3_BUCKET:-}
-      S3_PREFIX: ${S3_PREFIX:-backups/athlete-manager}
-      LOCAL_BACKUP_RETENTION_DAYS: ${LOCAL_BACKUP_RETENTION_DAYS:-3}
-      TZ: ${TZ:-Europe/Lisbon}
-    volumes:
-      - ./backups:/backups
-      - backup_status:/status
-    depends_on:
-      postgres:
-        condition: service_healthy
-    entrypoint: >
-      sh -c "echo '0 0 * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1' | crontab - && crond -f"
-    restart: unless-stopped
-
-volumes:
-  backup_status:
-
 secrets:
   npm_ca:
     file: ./.docker/npm-ca.pem

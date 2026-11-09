@@ -1,153 +1,76 @@
 # Operations Guide
 
-## Railway operations
-
-For the recommended Railway deployment, routine operations are handled in the
-Railway dashboard:
-
-- confirm the frontend, backend, and PostgreSQL services are deployed;
-- open the frontend public domain and check `/health` and `/health/backend`;
-- review backend/frontend deployment logs after each change;
-- keep PostgreSQL public networking disabled except for temporary maintenance;
-- enable daily PostgreSQL volume backups and periodically export a CSV ZIP from
-  **Dados e Cópias**.
-
-Railway auto-deploys from GitHub when configured. Roll back from the deployment
-history if a release breaks the app. Restore database snapshots from the
-PostgreSQL service **Backups** tab.
-
-## AWS fallback operations
-
-Run AWS fallback production commands from `~/trainning-management-app`. Always
-use:
-
-```bash
-docker compose --env-file .env.production -f docker-compose.prod.yml
-```
+Day-to-day operations for the Railway deployment. Initial setup is in the
+[Railway Deployment Guide](RAILWAY_DEPLOYMENT_GUIDE.md).
 
 ## Routine checks
 
-```bash
-docker compose --env-file .env.production -f docker-compose.prod.yml ps
-docker compose --env-file .env.production -f docker-compose.prod.yml logs --tail=200
-curl -fsS https://YOUR_DOMAIN/health/backend
-df -h
-free -h
-docker system df
-```
+- In Railway, confirm `frontend`, `backend` and `Postgres` show as active.
+- `curl -fsS https://YOUR_DOMAIN/health` and `.../health/backend` return OK.
+- Check **Usage** for unexpected memory/cost growth.
+- PostgreSQL must have no public networking enabled.
 
-Expected services are `postgres`, `app`, `web`, and `backup`, all healthy.
-Review backup logs for a successful midnight Europe/Lisbon upload.
+## Logs
 
-## Logs and restarts
+Open the service (backend or frontend) -> **Deployments** -> **View Logs**.
+Use the search/filter box for errors. Logs go to stdout; files under
+`/app/logs` are ephemeral and lost on redeploy.
 
-```bash
-docker compose --env-file .env.production -f docker-compose.prod.yml logs -f app
-docker compose --env-file .env.production -f docker-compose.prod.yml logs -f web
-docker compose --env-file .env.production -f docker-compose.prod.yml logs -f backup
-docker compose --env-file .env.production -f docker-compose.prod.yml restart app
-```
+## Deploying, redeploying and rolling back
 
-Docker JSON logs are size-limited by Compose. Application logs are stored in
-the `app_logs` volume.
+- **Deploy:** merge to `main`. With **Wait for CI** enabled, Railway deploys
+  only after CI passes.
+- **Redeploy / restart:** service -> **Deployments** -> menu on the latest
+  deployment -> **Redeploy** (or **Restart**). Use it after changing variables
+  if Railway did not already redeploy.
+- **Rollback:** service -> **Deployments**, choose the last good deployment ->
+  **Rollback**. Then fix forward in Git (revert the commit) so `main` matches.
+  Rollback does not revert database data.
 
-## Deployments
+## Backups and restore
 
-Normal production delivery is automatic after CI succeeds on a `main` push.
-The workflow publishes GHCR images tagged with that commit SHA and calls:
+Enable a daily schedule on the PostgreSQL service **Backups** tab (kept 6 days).
+Take a manual backup there, and a CSV ZIP export from **Dados e Cópias**, before
+risky changes.
 
-```bash
-deploy/scripts/remote-deploy.sh COMMIT_SHA
-```
+To restore a database backup:
 
-The script takes a pre-deployment backup when the stack exists, validates
-configuration, pulls images, starts services, checks HTTPS, and rolls back if
-health checks fail.
+1. Announce downtime; stop the backend service (or accept brief errors).
+2. PostgreSQL service -> **Backups** -> choose the snapshot -> **Restore**.
+3. Review the staged volume change and **Deploy** it.
+4. Start/redeploy the backend, log in, and check representative records.
 
-For an authorized manual deployment:
+Restore replaces the current data. CSV ZIP export is a convenience copy, not a
+full backup (no accounts, config or Flyway history). See
+[Backup and Recovery](BACKUP_SETUP.md).
 
-```bash
-deploy/scripts/remote-deploy.sh COMMIT_SHA
-```
+## Rotating secrets
 
-Do not use mutable tags such as `latest`. To roll back explicitly:
+1. Generate a new value (`openssl rand -base64 48`).
+2. Update it on the backend service **Variables** and deploy.
+3. `JWT_SECRET`: all users must log in again.
+4. `ADMIN_PASSWORD`: used by the backend when seeding the admin account; check
+   login after the redeploy and, if the old password still works, change it
+   through the app.
+5. Database password: rotate in Railway's PostgreSQL service; backend variables
+   reference it (`${{ Postgres.PGPASSWORD }}`) and pick it up on redeploy.
 
-```bash
-deploy/scripts/rollback.sh PREVIOUS_COMMIT_SHA
-```
-
-## Backups
-
-Run a manual backup before risky maintenance:
-
-```bash
-docker compose --env-file .env.production -f docker-compose.prod.yml \
-  run --rm --no-deps --entrypoint /usr/local/bin/backup.sh backup
-```
-
-List local and S3 backups:
-
-```bash
-docker compose --env-file .env.production -f docker-compose.prod.yml \
-  run --rm --no-deps --entrypoint /usr/local/bin/restore.sh backup list
-```
-
-The automated job runs at 00:00 Europe/Lisbon. S3 objects are private,
-SSE-S3-encrypted, and expire after 30 days. The IAM access key is kept only in
-`.env.production`. CSV ZIP export through **Dados e Cópias** remains useful for
-manual snapshots and transfers, but is not a full database backup.
-
-## Restore maintenance
-
-Restores replace the database. Announce downtime, verify the selected backup,
-and stop traffic and scheduled backups:
-
-```bash
-docker compose --env-file .env.production -f docker-compose.prod.yml stop web app backup
-
-docker compose --env-file .env.production -f docker-compose.prod.yml \
-  run --rm --no-deps -e RESTORE_CONFIRM=YES \
-  --entrypoint /usr/local/bin/restore.sh backup s3 latest
-
-docker compose --env-file .env.production -f docker-compose.prod.yml start app web backup
-deploy/scripts/health-check.sh
-```
-
-The restore verifies the checksum and creates a pre-restore safety dump. After
-startup, test authentication and representative data. Retain the safety dump
-until acceptance is complete. See [Backup and Recovery](BACKUP_SETUP.md).
-
-## Changing production configuration
-
-1. Back up `.env.production` securely.
-2. Edit it on the server; keep permissions at `600`.
-3. Run:
-
-```bash
-deploy/scripts/validate-env.sh
-docker compose --env-file .env.production -f docker-compose.prod.yml up -d
-deploy/scripts/health-check.sh
-```
-
-Never commit or copy AWS, database, JWT, or admin secrets into GitHub.
+Never commit secrets to Git.
 
 ## Incident checklist
 
-1. Confirm DNS resolves to the Lightsail static IP.
-2. Check Lightsail networking and UFW: only public 80/443; SSH only from the
-   administrator CIDR.
-3. Inspect Compose status and service logs.
-4. Check disk, memory, swap, AWS billing, and S3 access.
-5. If a new release caused the incident, use the previous SHA rollback.
-6. If data is damaged, enter maintenance mode and restore a verified backup.
+1. Check Railway status and the service's deployment state.
+2. Read the backend and frontend logs.
+3. Test `/health` and `/health/backend` to find which tier fails.
+4. If a new release caused it, roll back.
+5. If data is damaged, restore a verified backup.
+6. Check variables (especially `CORS_ALLOWED_ORIGINS` and `API_INTERNAL_URL`).
 
 ## Monthly maintenance
 
-- Review AWS charges, any promotional credit balance/expiry, and billing alerts.
-- Check Lightsail CPU, burst capacity, disk, memory, and swap.
-- Apply host security updates and verify Docker starts after reboot.
-- Confirm recent S3 backups and run a disposable restore drill.
-- Review firewall rules, SSH keys, IAM access keys, and GitHub production
-  secrets.
-- Confirm HTTPS renewal, DNS, GHCR package visibility, CI, and deployments.
-- Export a manual CSV ZIP snapshot when operationally appropriate.
+- Review Railway usage and invoice.
+- Confirm daily backups exist and test a restore into a disposable environment.
+- Download a CSV ZIP snapshot.
+- Review dependency updates and that CI is green.
+- Rotate the admin password if staff changed.
+- Check memory use; raise `-Xmx` in `JAVA_TOOL_OPTIONS` only if needed.

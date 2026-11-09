@@ -1,14 +1,17 @@
 # Railway Deployment Guide
 
-Railway is the recommended easiest production path for this small four-user
-application. It avoids server administration, manual HTTPS, Docker host setup,
-firewalls, and separate AWS S3/IAM work.
+Railway is the production platform for this application. It provides GitHub
+deployments, HTTPS, private networking and managed PostgreSQL, with no server
+administration.
 
-## Expected cost
+## Sizing and cost
 
-Railway's Hobby plan is currently **$5/month** and includes **$5/month of usage
-credit**. Usage above that is metered for RAM, CPU, volume storage, and egress.
-For this app, expect roughly **$5-15/month** unless memory/CPU usage grows.
+The app is used by 3-4 coaches and roughly 100-200 clients. **One replica of each
+service** (backend, frontend, PostgreSQL) is enough; do not add replicas.
+
+The Hobby plan is **$5/month** and includes **$5/month of usage credit**.
+Expect roughly **$5-15/month** in total (RAM, CPU, volume and egress are
+metered). Check **Usage** in the dashboard after the first week.
 
 ## Architecture
 
@@ -26,28 +29,23 @@ backend service (Spring Boot)
 Railway PostgreSQL
 ```
 
-The database stays private. The frontend is the only public service users need
-to open.
+The database stays private. Only the frontend is public.
 
 ## 1. Create the project
 
-1. Create or open a Railway account.
-2. Create a new Railway project from the GitHub repository.
-3. Add a PostgreSQL database service from Railway's database templates.
-4. Add a backend service from the same repository:
+1. Create a Railway project from the GitHub repository.
+2. Add a PostgreSQL database from Railway's templates.
+3. Add the backend service from the same repository:
    - root directory: `/backend`;
    - config file: `/backend/railway.toml`.
-5. Add a frontend service from the same repository:
+4. Add the frontend service from the same repository:
    - root directory: `/frontend`;
    - config file: `/frontend/railway.toml`.
 
-If Railway names the services differently from `backend`, `frontend`, or
-`Postgres`, adjust the variable references below to match the actual service
-names.
+Name the services `backend`, `frontend` and `Postgres`. If the names differ,
+adjust the variable references below (they are case-sensitive).
 
 ## 2. Backend variables
-
-Set these on the backend service:
 
 ```env
 SPRING_PROFILES_ACTIVE=prod
@@ -58,95 +56,108 @@ DB_NAME=${{ Postgres.PGDATABASE }}
 DB_USER=${{ Postgres.PGUSER }}
 DB_PASS=${{ Postgres.PGPASSWORD }}
 JWT_SECRET=CHANGE_ME_AT_LEAST_32_CHARACTERS
-JWT_EXPIRATION=86400000
+JWT_EXPIRATION=2592000000
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=CHANGE_ME_STRONG_PASSWORD
 CORS_ALLOWED_ORIGINS=https://${{ frontend.RAILWAY_PUBLIC_DOMAIN }}
+JAVA_TOOL_OPTIONS=-Xmx384m
 ```
 
-Generate secrets locally, for example:
+Notes:
 
-```bash
-openssl rand -base64 48
-```
-
-Seal sensitive Railway variables where appropriate.
+- **Never leave `ADMIN_PASSWORD` as `admin`** (or any guessable value). Generate a
+  strong one and store it in a password manager. `ADMIN_USERNAME` and
+  `ADMIN_PASSWORD` are required by the `prod` profile.
+- `JWT_SECRET` must be at least 32 characters: `openssl rand -base64 48`.
+- `JWT_EXPIRATION` is in milliseconds. The default in `application-prod.yml` is
+  also `2592000000` (30 days), so coaches only sign in again about once a month.
+- `JAVA_TOOL_OPTIONS=-Xmx384m` caps the JVM heap so the backend stays within a
+  small memory footprint (and cost). Raise it only if you see out-of-memory
+  errors in the logs.
+- Seal the sensitive variables (`JWT_SECRET`, `ADMIN_PASSWORD`).
 
 ## 3. Frontend variables
-
-Set these on the frontend service:
 
 ```env
 PORT=8080
 API_INTERNAL_URL=http://backend.railway.internal:8080
 ```
 
-The Railway frontend image uses `frontend/Dockerfile.railway` and
-`frontend/Caddyfile.railway`. Caddy serves the compiled React app and proxies
-`/api/*` plus `/health/backend` to the backend over Railway private networking.
+`frontend/Dockerfile.railway` builds the React app and serves it with
+`frontend/Caddyfile.railway`, which listens on `$PORT` (8080), proxies `/api/*`
+and `/health/backend` to `API_INTERNAL_URL`, and answers `/health` itself.
+The backend must listen on the same port as in `API_INTERNAL_URL`; it does, as
+`application-prod.yml` uses `server.port: ${PORT:8080}`.
 
 ## 4. Networking and domains
 
-On the frontend service, go to **Settings -> Networking -> Public Networking**
-and generate a Railway domain. Railway automatically provides HTTPS.
+On the frontend service open **Settings -> Networking -> Public Networking** and
+generate a Railway domain (HTTPS is automatic). Keep the backend and PostgreSQL
+without public domains. Enable temporary database public access only for
+maintenance, then remove it.
 
-Use the generated domain first. Later, add a custom domain if desired and update
-the backend `CORS_ALLOWED_ORIGINS` to the custom HTTPS origin.
+### Optional: custom domain
 
-Do not enable public networking for PostgreSQL. Only enable temporary database
-public access for maintenance when absolutely necessary, then remove it.
+1. Add the domain under the frontend service's **Networking -> Custom Domain**
+   and create the DNS record Railway shows.
+2. Wait for the certificate to be issued.
+3. Update the backend variable `CORS_ALLOWED_ORIGINS` to the custom HTTPS origin
+   (e.g. `https://app.example.com`; comma-separate several origins) and let
+   the backend redeploy.
 
-## 5. Health checks
+## 5. Deploy only after CI passes
 
-Railway configs set:
+On **both** the backend and frontend services enable
+**Settings -> Source -> Wait for CI**. Railway then deploys a push to `main` only
+after the GitHub Actions `CI` workflow succeeds. Failed CI means no deployment.
+
+## 6. Health checks
+
+`railway.toml` files configure:
 
 | Service | Health path |
 |---|---|
 | backend | `/actuator/health` |
 | frontend | `/health` |
 
-After deployment, also check:
+After deploying, verify:
 
 ```bash
 curl -fsS https://YOUR_RAILWAY_DOMAIN/health
 curl -fsS https://YOUR_RAILWAY_DOMAIN/health/backend
 ```
 
-## 6. Backups and recovery
+Then log in with `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
 
-Enable Railway volume backups on the PostgreSQL service:
+## 7. Logs
 
-- schedule: daily;
-- retention: Railway daily backups are kept for 6 days;
-- optionally add weekly/monthly backups if Railway allows them on the selected
-  plan and the extra storage cost is acceptable.
+The application writes to stdout/stderr; read it in the service's **Deployments
+-> View Logs** in Railway. The `logging.file.path: /app/logs` setting in
+`application-prod.yml` also writes files, but the container filesystem is
+ephemeral: they disappear on every redeploy/restart, so do not rely on them.
 
-Use the app's **Dados e Cópias** CSV ZIP export regularly as a portable backup
-outside Railway. A good routine is:
+## 8. Backups
 
-- Railway daily database backup for platform recovery;
-- weekly manual CSV ZIP download for simple off-platform portability;
-- CSV export before large imports or risky data changes.
+On the PostgreSQL service open **Backups** and enable a **daily** schedule
+(Railway keeps daily backups for 6 days; add weekly/monthly if the extra
+storage is acceptable). Also download a CSV ZIP from **Dados e Cópias**
+weekly as a portable off-platform copy. See [Operations Guide](OPERATIONS_GUIDE.md).
 
-To restore a Railway backup, use the PostgreSQL service **Backups** tab,
-restore the selected snapshot, review the staged change, and deploy it. Then
-verify login and representative records.
+## 9. Optional: import existing data
 
-## 7. Deployment flow
+To bring over data from a local or previous instance, export a CSV ZIP from
+**Dados e Cópias** there, then import it in the Railway app's **Dados e Cópias**
+page. CSV transfer does not include accounts or configuration; see
+[CSV Data Transfer](DATA_TRANSFER.md). Export a fresh ZIP from the target
+first.
 
-Railway can auto-deploy from GitHub. A normal production update is:
+## 10. Updates and local testing
 
-1. Push/merge to `main`.
-2. Railway builds the backend and frontend services.
-3. Railway waits for health checks.
-4. The new deployment becomes active.
+A normal update: merge to `main` -> CI runs -> Railway builds and waits for
+health checks -> the new deployment becomes active (the old one stays until
+then).
 
-The existing GitHub Actions CI can still run tests on pull requests and `main`.
-The AWS/GHCR SSH deployment workflow is not needed for Railway.
-
-## 8. Local testing remains unchanged
-
-Use Docker locally:
+Local development is unchanged:
 
 ```bash
 cp .env.example .env
@@ -155,9 +166,3 @@ docker compose up -d --build
 ```
 
 Open `http://localhost:3000`.
-
-## 9. AWS fallback
-
-If Railway becomes too expensive, use
-[AWS Deployment Guide](AWS_DEPLOYMENT_GUIDE.md). That path is cheaper but more
-operationally complex.

@@ -116,7 +116,7 @@ Workout cards use the same styling and capabilities regardless of athlete assign
 - Authenticated users can export all operational data as a versioned ZIP of related CSV files.
 - Import validates the complete package and displays counts before requiring destructive confirmation.
 - Confirmed import atomically replaces operational data but retains login credentials.
-- Automated PostgreSQL backups and off-machine copies remain the disaster-recovery mechanism.
+- Railway PostgreSQL volume backups and manual CSV ZIP exports remain the disaster-recovery mechanism.
 
 ## 5. User Stories
 

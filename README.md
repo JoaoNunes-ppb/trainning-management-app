@@ -9,7 +9,7 @@ build and schedule workouts, record results, and transfer operational data.
 - Exercise library and workout planning/results.
 - Shared JWT-authenticated administration account.
 - Validated CSV ZIP export/import for manual snapshots and transfer.
-- Railway PostgreSQL backups in production, with an AWS/S3 fallback path.
+- Railway PostgreSQL backups in production.
 
 The coach selector organizes data; it is not an authorization boundary. The
 shared account can manage all athletes.
@@ -38,14 +38,7 @@ keeps local or corporate certificate authorities trusted without disabling TLS.
 | Spring Boot API | `http://localhost:8080` |
 | PostgreSQL | `localhost:5432` |
 
-`docker-compose.yml` builds PostgreSQL, the app, and the Nginx frontend. The S3
-backup worker is optional:
-
-```bash
-docker compose --profile backup up -d --build
-```
-
-Configure non-production S3 credentials in `.env` before enabling it.
+`docker-compose.yml` builds PostgreSQL, the app, and the Nginx frontend.
 
 ## Architecture
 
@@ -54,17 +47,15 @@ Local:       browser -> Nginx frontend -> Spring Boot -> PostgreSQL
 Production:  Railway HTTPS -> Caddy frontend -> Spring Boot -> Railway PostgreSQL
 ```
 
-Production is now Railway-first: Railway hosts PostgreSQL, builds the backend
-and frontend services from this monorepo, provides HTTPS, and keeps the database
-private. The previously implemented Lightsail/S3 Docker deployment remains as a
-lower-cost fallback if operational complexity is acceptable.
+Production runs on Railway: it hosts PostgreSQL, builds the backend and
+frontend services from this monorepo, provides HTTPS, and keeps the database
+private.
 
 ## Production
 
 Start with [Railway Deployment Guide](docs/RAILWAY_DEPLOYMENT_GUIDE.md). The
 expected cost is roughly **$5-15/month**, depending on actual memory, CPU, disk,
-and network usage. Use [AWS Deployment Guide](docs/AWS_DEPLOYMENT_GUIDE.md) only
-if lowest cost is more important than simplicity.
+and network usage.
 
 ## Tests
 
@@ -78,10 +69,9 @@ if lowest cost is more important than simplicity.
 | Guide | Purpose |
 |---|---|
 | [Deployment](docs/DEPLOYMENT_GUIDE.md) | Local and production deployment overview |
-| [Railway deployment](docs/RAILWAY_DEPLOYMENT_GUIDE.md) | Easiest production launch path |
-| [AWS deployment](docs/AWS_DEPLOYMENT_GUIDE.md) | Lower-cost Lightsail/S3 fallback |
+| [Railway deployment](docs/RAILWAY_DEPLOYMENT_GUIDE.md) | Railway production launch path |
 | [Operations](docs/OPERATIONS_GUIDE.md) | Monitoring, deployment, rollback, maintenance |
-| [Backup and recovery](docs/BACKUP_SETUP.md) | Railway backups, CSV snapshots, and AWS fallback |
+| [Backup and recovery](docs/BACKUP_SETUP.md) | Railway backups and CSV snapshots |
 | [Infrastructure](docs/INFRASTRUCTURE.md) | Local and production topology |
 | [CSV data transfer](docs/DATA_TRANSFER.md) | Manual export/import format and safety |
 | [Security](docs/SECURITY.md) | Authentication and security controls |
@@ -97,7 +87,7 @@ docker compose logs --tail=200 app frontend postgres
 
 - Port conflicts: local development uses 3000, 8080, and 5432.
 - Startup failures: confirm `.env` exists and database/app health checks pass.
-- Production failures: use the exact production command shown above and see
+- Production failures: check the Railway deployment logs and see
   the [Operations Guide](docs/OPERATIONS_GUIDE.md).
 
 Private project. All rights reserved.

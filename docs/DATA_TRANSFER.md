@@ -48,7 +48,6 @@ Download a current export before importing another snapshot.
 ## Backup policy
 
 CSV snapshots complement rather than replace PostgreSQL backups. Keep the
-Railway PostgreSQL volume backup schedule enabled in production. If using the
-AWS fallback, keep the automated daily `pg_dump` upload to private S3
-configured. Test a database restore periodically; an untested backup should not
-be treated as recoverable.
+Railway PostgreSQL volume backup schedule enabled in production. Test a
+database restore periodically; an untested backup should not be treated as
+recoverable.
